@@ -1032,12 +1032,12 @@ function submitAnswer(val) {
   if (correct && !isTyped) {
     const cappedTime = Math.min(elapsed, 20); // Cap at 20s — anything longer isn't a real attempt
     prob.times.push(cappedTime);
-    if (prob.times.length > 3) prob.times = prob.times.slice(-3);
+    if (prob.times.length > 5) prob.times = prob.times.slice(-5);
     // Sync time to commutative partner
     if (a !== b) {
       const pp = state.problems[`${b}x${a}`];
       pp.times.push(cappedTime);
-      if (pp.times.length > 3) pp.times = pp.times.slice(-3);
+      if (pp.times.length > 5) pp.times = pp.times.slice(-5);
     }
     // Update best color (ratchet — only goes up)
     updateBestColor(key);
@@ -1256,8 +1256,8 @@ function getCombinedTimes(key) {
     const partner = `${b}x${a}`;
     times.push(...(state.problems[partner]?.times || []));
   }
-  // Sort by recency (last entries are most recent) and take last 3
-  return times.slice(-3);
+  // Sort by recency (last entries are most recent) and take last 5
+  return times.slice(-5);
 }
 
 // Color ranks: 0=none, 1=slow(red), 2=medium(yellow), 3=fast(green), 4=retired(gold)
@@ -1398,15 +1398,17 @@ function findHardestProblems() {
 function showCellPopover(a, b) {
   const key = `${a}x${b}`;
   const p = state.problems[key];
-  const levelNames = ['New', 'Learning', 'Almost There', 'Mastered'];
-  const levelColors = ['var(--new)', 'var(--learning)', 'var(--almost)', 'var(--mastered)'];
   const avg = getAvgSpeed(p, key);
   const retired = isRetired(key);
+  const sc = getSpeedClass(p, key);
+  const mastered = sc === 'speed-fast' || sc === 'speed-retired';
+  const masteryLabel = mastered ? 'Mastered' : (p.times || []).length >= 3 ? 'Learning' : 'New';
+  const masteryColor = mastered ? 'var(--mastered)' : (p.times || []).length >= 3 ? 'var(--learning)' : 'var(--new)';
   const speedLabel = avg === null ? '' : retired ? '✓ Nailed it!' : avg < 3 ? '🟢 Fast' : avg <= 6 ? '🟡 Medium' : '🔴 Slow';
   const speedDetail = avg !== null ? ` · Avg ${avg.toFixed(1)}s` : '';
 
   // Times are already synced between commutative pairs, so just use this problem's times
-  const lastTimes = (p.times || []).slice(-3);
+  const lastTimes = (p.times || []).slice(-5);
 
   const overlay = document.createElement('div');
   overlay.className = 'popover-overlay';
@@ -1416,7 +1418,7 @@ function showCellPopover(a, b) {
   pop.className = 'cell-popover';
   pop.innerHTML = `
     <div class="popover-fact">${a} × ${b} = ${a * b}</div>
-    <div class="popover-level" style="color:${levelColors[p.level]}">${levelNames[p.level]}</div>
+    <div class="popover-level" style="color:${masteryColor}">${masteryLabel}</div>
     ${speedLabel ? `<div style="font-weight:700;font-size:15px;margin:4px 0">${speedLabel}${speedDetail}</div>` : ''}
     ${lastTimes.length > 0 ? `<div style="display:flex;gap:6px;justify-content:center;margin:8px 0">
       ${lastTimes.map(t => {
@@ -1908,7 +1910,7 @@ function syncCommutativePairs() {
       p1.bestColor = best;
       p2.bestColor = best;
       // Sync times: merge and keep last 3
-      const allTimes = [...(p1.times || []), ...(p2.times || [])].slice(-3);
+      const allTimes = [...(p1.times || []), ...(p2.times || [])].slice(-5);
       p1.times = [...allTimes];
       p2.times = [...allTimes];
     }
