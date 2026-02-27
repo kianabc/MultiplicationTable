@@ -1,0 +1,1965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Multiplication Master</title>
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Multiplication%20Master%22%2C%22short_name%22%3A%22MultMaster%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F3E5F5%22%2C%22theme_color%22%3A%22%237C4DFF%22%7D">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey: "AIzaSyAegGTqnm-Af4PVvLCQJmKGF_ojvHpfr9A",
+  authDomain: "multiplication-table-4441e.firebaseapp.com",
+  projectId: "multiplication-table-4441e",
+  storageBucket: "multiplication-table-4441e.firebasestorage.app",
+  messagingSenderId: "84252361345",
+  appId: "1:84252361345:web:dc5796dce7c218d698c380"
+});
+</script>
+<style>
+/* ==================== VARIABLES & RESET ==================== */
+:root {
+  --primary: #7C4DFF;
+  --primary-dark: #651FFF;
+  --primary-light: #B388FF;
+  --bg: #F3E5F5;
+  --surface: #FFFFFF;
+  --surface-hover: #F5F5F5;
+  --text: #37474F;
+  --text-light: #78909C;
+  --new: #E0E0E0;
+  --learning: #FF7043;
+  --almost: #FFC107;
+  --mastered: #4CAF50;
+  --wrong-color: #FF7043;
+  --star-color: #FFD54F;
+  --nav-h: 64px;
+  --sidebar-w: 220px;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100%;
+  overflow: hidden;
+  font-size: clamp(14px, 2.5vw, 16px);
+}
+h1, h2, h3, .quiz-num, .grid-header, .stat-value, .btn-label {
+  font-family: 'Fredoka One', cursive;
+}
+button {
+  font-family: 'Nunito', sans-serif;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+input {
+  font-family: 'Nunito', sans-serif;
+  outline: none;
+}
+
+/* ==================== LAYOUT ==================== */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+#main-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--nav-h) + 16px);
+}
+.view { display: none; min-height: 100%; padding: 20px 16px; }
+.view.active { display: block; }
+
+/* ==================== BOTTOM NAV ==================== */
+#bottom-nav {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: var(--nav-h);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  box-shadow: 0 -2px 12px rgba(0,0,0,.08);
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  color: var(--text-light);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 12px;
+  transition: color .2s;
+}
+.nav-btn .nav-icon { font-size: 24px; }
+.nav-btn.active { color: var(--primary); }
+
+/* ==================== WELCOME VIEW ==================== */
+.welcome-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  text-align: center;
+  gap: 24px;
+}
+.welcome-wrap h1 { font-size: clamp(28px, 6vw, 40px); color: var(--primary); }
+.welcome-wrap p { color: var(--text-light); font-size: 18px; }
+.welcome-input {
+  font-size: 22px;
+  padding: 14px 20px;
+  border: 3px solid var(--primary-light);
+  border-radius: var(--radius);
+  text-align: center;
+  width: 280px;
+  max-width: 90%;
+  transition: border-color .2s;
+  font-weight: 700;
+}
+.welcome-input:focus { border-color: var(--primary); }
+
+/* ==================== BUTTONS ==================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 28px;
+  border-radius: var(--radius);
+  font-size: 17px;
+  font-weight: 800;
+  transition: transform .15s, box-shadow .15s, background .15s;
+  min-height: 56px;
+}
+.btn:active { transform: scale(.96); }
+.btn-primary { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(124,77,255,.3); }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-secondary { background: var(--surface); color: var(--primary); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.btn-block { width: 100%; }
+
+/* ==================== DASHBOARD ==================== */
+.dashboard { max-width: 480px; margin: 0 auto; text-align: center; }
+.greeting { font-size: clamp(22px, 5vw, 30px); color: var(--primary); margin-bottom: 8px; }
+.sub-greeting { color: var(--text-light); margin-bottom: 24px; }
+.progress-ring-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 20px;
+}
+.progress-ring { transform: rotate(-90deg); }
+.progress-ring-bg { fill: none; stroke: #E8E0F0; stroke-width: 12; }
+.progress-ring-fill { fill: none; stroke: var(--primary); stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset .8s ease; }
+.progress-center {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+.progress-count { font-family: 'Fredoka One', cursive; font-size: 36px; color: var(--primary); }
+.progress-label { font-size: 13px; color: var(--text-light); font-weight: 700; }
+.stats-row {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+.stat-card {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  text-align: center;
+  min-width: 100px;
+}
+.stat-value { font-size: 24px; color: var(--primary); }
+.stat-label { font-size: 12px; color: var(--text-light); font-weight: 700; }
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+.action-btn {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.07);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: transform .15s, box-shadow .15s;
+}
+.action-btn:active { transform: scale(.96); }
+.action-icon { font-size: 32px; }
+.action-label { font-weight: 800; font-size: 14px; color: var(--text); }
+
+/* ==================== QUIZ ==================== */
+.quiz-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.quiz-progress-bar {
+  flex: 1;
+  height: 8px;
+  background: #E8E0F0;
+  border-radius: 4px;
+  margin: 0 12px;
+  overflow: hidden;
+}
+.quiz-progress-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: 4px;
+  transition: width .3s;
+}
+.quiz-counter { font-weight: 800; color: var(--text-light); min-width: 48px; }
+.quiz-streak-badge {
+  background: linear-gradient(135deg, #FF7043, #FF5722);
+  color: #fff;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-weight: 800;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity .3s;
+}
+.quiz-streak-badge.visible { opacity: 1; }
+.quiz-close-btn {
+  background: none;
+  font-size: 24px;
+  color: var(--text-light);
+  padding: 4px 8px;
+}
+.quiz-question-area {
+  text-align: center;
+  padding: 32px 0 24px;
+}
+.quiz-num {
+  font-size: clamp(48px, 12vw, 72px);
+  color: var(--text);
+  line-height: 1.1;
+}
+.quiz-operator { color: var(--primary); }
+.quiz-equals { color: var(--text-light); }
+.quiz-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  max-width: 360px;
+  margin: 0 auto;
+}
+.choice-btn {
+  font-family: 'Fredoka One', cursive;
+  font-size: 28px;
+  padding: 18px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 3px 10px rgba(0,0,0,.08);
+  transition: transform .12s, background .2s, color .2s, box-shadow .2s;
+  min-height: 64px;
+}
+.choice-btn:active { transform: scale(.95); }
+.choice-btn.correct { background: var(--mastered); color: #fff; animation: correctPop .4s; }
+.choice-btn.wrong { background: var(--wrong-color); color: #fff; animation: wrongShake .4s; }
+.choice-btn.reveal { background: var(--mastered); color: #fff; opacity: .7; }
+.typed-area {
+  text-align: center;
+  max-width: 300px;
+  margin: 0 auto;
+}
+.typed-input {
+  font-family: 'Fredoka One', cursive;
+  font-size: 36px;
+  text-align: center;
+  border: 3px solid var(--primary-light);
+  border-radius: var(--radius);
+  padding: 14px;
+  width: 160px;
+  transition: border-color .2s;
+}
+.typed-input:focus { border-color: var(--primary); }
+.typed-input.correct { border-color: var(--mastered); background: #E8F5E9; animation: correctPop .4s; }
+.typed-input.wrong { border-color: var(--wrong-color); background: #FBE9E7; animation: wrongShake .4s; }
+.quiz-feedback {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  min-height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.feedback-correct { color: var(--mastered); }
+.feedback-wrong { color: var(--wrong-color); }
+.tip-bubble {
+  background: #FFF8E1;
+  border: 2px solid #FFE082;
+  border-radius: var(--radius);
+  padding: 14px 20px;
+  font-size: 15px;
+  color: #5D4037;
+  font-weight: 600;
+  margin-top: 12px;
+  max-width: 360px;
+  text-align: center;
+  line-height: 1.5;
+  animation: slideInSimple .3s;
+}
+.tip-bubble .tip-label {
+  color: #F57F17;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.tip-bubble .tip-strategy {
+  font-family: 'Fredoka One', cursive;
+  font-size: 18px;
+  color: var(--primary);
+  margin-top: 4px;
+}
+
+/* ==================== RESULTS ==================== */
+.results { max-width: 480px; margin: 0 auto; text-align: center; }
+.results h2 { font-size: 28px; color: var(--primary); margin-bottom: 4px; }
+.results-subtitle { color: var(--text-light); margin-bottom: 20px; font-weight: 600; }
+.results-score {
+  font-family: 'Fredoka One', cursive;
+  font-size: 56px;
+  color: var(--primary);
+  margin: 16px 0;
+}
+.results-stars {
+  font-size: 20px;
+  color: var(--star-color);
+  margin-bottom: 24px;
+  font-weight: 700;
+}
+.results-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+.result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+.result-item.was-correct { border-left: 4px solid var(--mastered); }
+.result-item.was-wrong { border-left: 4px solid var(--wrong-color); }
+.result-fact { font-family: 'Fredoka One', cursive; font-size: 16px; }
+.result-badge { font-size: 13px; padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+.badge-new-mastery { background: #E8F5E9; color: var(--mastered); }
+.badge-level-up { background: #FFF8E1; color: #F57F17; }
+
+/* ==================== 12x12 GRID ==================== */
+.grid-view { max-width: 600px; margin: 0 auto; }
+.grid-view h2 { text-align: center; color: var(--primary); margin-bottom: 12px; }
+.grid-filters {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.filter-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 13px;
+  background: var(--surface);
+  color: var(--text-light);
+  transition: all .2s;
+}
+.filter-btn.active { background: var(--primary); color: #fff; }
+.grid-container {
+  display: grid;
+  grid-template-columns: 36px repeat(12, 1fr);
+  grid-template-rows: 36px repeat(12, 1fr);
+  gap: 3px;
+  margin-bottom: 20px;
+}
+.grid-corner { background: none; }
+.grid-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(11px, 2.5vw, 15px);
+  color: var(--primary);
+  position: relative;
+}
+.grid-header.gold { color: #F9A825; }
+.grid-header .star-badge {
+  position: absolute;
+  top: -2px; right: -2px;
+  font-size: 8px;
+}
+.grid-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  font-family: 'Fredoka One', cursive;
+  font-size: clamp(9px, 2vw, 13px);
+  color: #fff;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+  position: relative;
+}
+.grid-cell:active { transform: scale(1.15); z-index: 2; }
+.grid-cell.speed-none { background: #fff; color: #BDBDBD; }
+.grid-cell.speed-fast { background: #4CAF50; }
+.grid-cell.speed-retired { background: #4A148C; color: #fff; }
+.grid-cell.speed-medium { background: #FFF59D; color: #5D4037; }
+.grid-cell.speed-slow { background: #EF5350; }
+.grid-cell.dim { opacity: .2; }
+.grid-summary {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.grid-summary-item {
+  text-align: center;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.06);
+}
+.grid-summary-item .stat-value { font-size: 20px; }
+
+/* Cell Popover */
+.cell-popover {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.18);
+  z-index: 200;
+  text-align: center;
+  min-width: 260px;
+  animation: slideIn .25s;
+}
+.popover-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.3);
+  z-index: 199;
+}
+.popover-fact { font-family: 'Fredoka One', cursive; font-size: 28px; margin-bottom: 8px; }
+.popover-level { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.popover-stats { font-size: 13px; color: var(--text-light); margin-bottom: 16px; }
+
+/* ==================== TIPS ==================== */
+.tips-view { max-width: 560px; margin: 0 auto; }
+.tips-view h2 { text-align: center; color: var(--primary); margin-bottom: 16px; }
+.tip-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+  transition: transform .15s;
+}
+.tip-card:active { transform: scale(.98); }
+.tip-card.locked { opacity: .45; filter: grayscale(.5); }
+.tip-title { font-weight: 800; font-size: 16px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.tip-desc { font-size: 14px; color: var(--text-light); line-height: 1.5; }
+.tip-example { font-family: 'Fredoka One', cursive; font-size: 15px; color: var(--primary); margin-top: 6px; }
+
+/* ==================== STATS & ACHIEVEMENTS ==================== */
+.stats-view { max-width: 560px; margin: 0 auto; }
+.stats-view h2 { text-align: center; color: var(--primary); margin-bottom: 16px; }
+.stats-overview {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.achievements-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.achievement-card {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,.06);
+  transition: transform .15s;
+}
+.achievement-card.unlocked { border: 2px solid var(--star-color); }
+.achievement-card.locked { opacity: .4; filter: grayscale(.6); }
+.achievement-icon { font-size: 32px; margin-bottom: 6px; }
+.achievement-name { font-weight: 800; font-size: 13px; }
+.achievement-desc { font-size: 11px; color: var(--text-light); margin-top: 2px; }
+
+/* ==================== SYNC MODAL ==================== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 28px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+  animation: slideIn .25s;
+}
+.modal h3 { color: var(--primary); margin-bottom: 12px; }
+.pin-display {
+  font-family: 'Fredoka One', cursive;
+  font-size: 36px;
+  letter-spacing: 8px;
+  color: var(--primary);
+  margin: 16px 0;
+}
+.pin-input {
+  font-family: 'Fredoka One', cursive;
+  font-size: 28px;
+  text-align: center;
+  letter-spacing: 6px;
+  border: 3px solid var(--primary-light);
+  border-radius: var(--radius);
+  padding: 10px;
+  width: 200px;
+}
+
+/* ==================== ANIMATIONS ==================== */
+@keyframes correctPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@keyframes wrongShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+@keyframes starFloat {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-70px) scale(1.4); }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(.92); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes slideInSimple {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+@keyframes bannerSlide {
+  0% { transform: translateY(-100%); opacity: 0; }
+  15% { transform: translateY(0); opacity: 1; }
+  85% { transform: translateY(0); opacity: 1; }
+  100% { transform: translateY(-100%); opacity: 0; }
+}
+.star-anim {
+  position: fixed;
+  pointer-events: none;
+  font-size: 28px;
+  z-index: 999;
+  animation: starFloat .8s ease-out forwards;
+}
+.confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+.confetti-piece {
+  position: absolute;
+  top: -12px;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  animation: confettiFall 2.5s ease-out forwards;
+}
+.banner {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  padding: 16px;
+  text-align: center;
+  font-family: 'Fredoka One', cursive;
+  font-size: 20px;
+  color: #fff;
+  z-index: 500;
+  animation: bannerSlide 3s ease forwards;
+}
+.banner-mastery { background: linear-gradient(135deg, var(--mastered), #2E7D32); }
+.banner-achievement { background: linear-gradient(135deg, var(--primary), #4A148C); }
+
+/* ==================== RESPONSIVE ==================== */
+@media (min-width: 768px) {
+  #bottom-nav {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    right: auto;
+    width: var(--sidebar-w);
+    height: 100%;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 24px 12px;
+    gap: 8px;
+    box-shadow: 2px 0 12px rgba(0,0,0,.06);
+  }
+  .nav-btn {
+    flex-direction: row;
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 14px;
+    gap: 10px;
+    justify-content: flex-start;
+  }
+  #main-content {
+    margin-left: var(--sidebar-w);
+    padding-bottom: 16px;
+  }
+  .view { padding: 28px 32px; }
+  .grid-container { gap: 4px; }
+  .grid-cell { font-size: 14px; }
+}
+@media (max-width: 380px) {
+  .quiz-choices { gap: 8px; }
+  .choice-btn { padding: 14px; font-size: 24px; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="main-content">
+    <!-- WELCOME -->
+    <div id="view-welcome" class="view">
+      <div class="welcome-wrap">
+        <div style="font-size:64px">✖️</div>
+        <h1>Multiplication Master</h1>
+        <p>What's your name?</p>
+        <input class="welcome-input" id="welcome-name" type="text" placeholder="Type your name" maxlength="20" autocomplete="off">
+        <button class="btn btn-primary" id="welcome-go" style="min-width:200px">Let's Go!</button>
+      </div>
+    </div>
+
+    <!-- HOME DASHBOARD -->
+    <div id="view-home" class="view">
+      <div class="dashboard">
+        <h2 class="greeting" id="dash-greeting"></h2>
+        <p class="sub-greeting" id="dash-sub"></p>
+        <div class="progress-ring-wrap">
+          <svg class="progress-ring" width="160" height="160">
+            <circle class="progress-ring-bg" cx="80" cy="80" r="66"/>
+            <circle class="progress-ring-fill" id="progress-circle" cx="80" cy="80" r="66"/>
+          </svg>
+          <div class="progress-center">
+            <div class="progress-count" id="dash-mastered">0</div>
+            <div class="progress-label">of 144 learned</div>
+          </div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card"><div class="stat-value" id="dash-stars">0</div><div class="stat-label">Stars</div></div>
+          <div class="stat-card"><div class="stat-value" id="dash-streak">0</div><div class="stat-label">Day Streak</div></div>
+          <div class="stat-card"><div class="stat-value" id="dash-sessions">0</div><div class="stat-label">Sessions</div></div>
+        </div>
+        <div class="action-grid">
+          <button class="action-btn" onclick="startQuiz()"><span class="action-icon">🎯</span><span class="action-label">Practice</span></button>
+          <button class="action-btn" onclick="showView('grid')"><span class="action-icon">📊</span><span class="action-label">Grid</span></button>
+          <button class="action-btn" onclick="showView('tips')"><span class="action-icon">💡</span><span class="action-label">Math Tips</span></button>
+          <button class="action-btn" onclick="showView('stats')"><span class="action-icon">🏆</span><span class="action-label">Achievements</span></button>
+        </div>
+        <button class="btn btn-secondary btn-block" style="margin-top:16px" onclick="showSyncModal()">Sync Across Devices</button>
+      </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div id="view-quiz" class="view">
+      <div class="quiz-header">
+        <span class="quiz-counter" id="quiz-counter">1/12</span>
+        <div class="quiz-progress-bar"><div class="quiz-progress-fill" id="quiz-bar"></div></div>
+        <span class="quiz-accuracy" id="quiz-accuracy" style="font-weight:800;font-size:14px;color:var(--mastered);min-width:48px;text-align:center"></span>
+        <span class="quiz-streak-badge" id="quiz-streak-badge">🔥 0</span>
+        <button class="quiz-close-btn" onclick="quitQuiz()">✕</button>
+      </div>
+      <div class="quiz-question-area">
+        <span class="quiz-num" id="quiz-a"></span>
+        <span class="quiz-num quiz-operator"> × </span>
+        <span class="quiz-num" id="quiz-b"></span>
+        <span class="quiz-num quiz-equals"> = ?</span>
+      </div>
+      <div id="quiz-answer-area"></div>
+      <div class="quiz-feedback" id="quiz-feedback"></div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="view-results" class="view">
+      <div class="results" id="results-content"></div>
+    </div>
+
+    <!-- GRID -->
+    <div id="view-grid" class="view">
+      <div class="grid-view">
+        <h2>Your Progress Grid</h2>
+        <div class="grid-filters" id="grid-filters"></div>
+        <div class="grid-container" id="grid-container"></div>
+        <div class="grid-summary" id="grid-summary"></div>
+      </div>
+    </div>
+
+    <!-- TIPS -->
+    <div id="view-tips" class="view">
+      <div class="tips-view">
+        <h2>Math Tips</h2>
+        <div id="tips-list"></div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div id="view-stats" class="view">
+      <div class="stats-view">
+        <h2>Achievements</h2>
+        <div class="stats-overview" id="stats-overview"></div>
+        <h3 style="margin:16px 0 12px;color:var(--text-light)">Badges</h3>
+        <div class="achievements-grid" id="achievements-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav id="bottom-nav" style="display:none">
+    <button class="nav-btn active" data-view="home"><span class="nav-icon">🏠</span><span>Home</span></button>
+    <button class="nav-btn" data-view="quiz" onclick="startQuiz()"><span class="nav-icon">🎯</span><span>Practice</span></button>
+    <button class="nav-btn" data-view="grid"><span class="nav-icon">📊</span><span>Grid</span></button>
+    <button class="nav-btn" data-view="stats"><span class="nav-icon">🏆</span><span>Awards</span></button>
+  </nav>
+</div>
+
+<script>
+/* ==================== STATE ==================== */
+const DEFAULT_STATE = {
+  profile: { name: '', createdAt: null, totalStars: 0, dailyStreak: 0, bestStreak: 0, lastPracticeDate: null, sessionsCount: 0 },
+  problems: {},
+  achievements: [],
+  sessions: [],
+  tipsUnlocked: [],
+  firebaseUid: null
+};
+
+let state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+let quiz = { problems: [], index: 0, results: [], streak: 0, sessionStars: 0, startTime: 0, answered: false };
+let audioCtx = null;
+
+function initProblems() {
+  for (let a = 1; a <= 12; a++)
+    for (let b = 1; b <= 12; b++) {
+      const k = `${a}x${b}`;
+      if (!state.problems[k]) state.problems[k] = { level: 0, correct: 0, consecutive: 0, wrongStreak: 0, lastSeen: null, totalAttempts: 0, times: [], bestColor: 0 };
+      else { if (!state.problems[k].times) state.problems[k].times = []; if (!state.problems[k].bestColor) state.problems[k].bestColor = 0; }
+    }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem('mult_master_state');
+    if (raw) {
+      const saved = JSON.parse(raw);
+      state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...saved };
+      state.profile = { ...JSON.parse(JSON.stringify(DEFAULT_STATE.profile)), ...saved.profile };
+    }
+  } catch(e) { console.warn('Load failed', e); }
+  initProblems();
+}
+
+function saveState() {
+  try { localStorage.setItem('mult_master_state', JSON.stringify(state)); } catch(e) {}
+  debouncedSync();
+}
+
+function masteredCount() {
+  return Object.values(state.problems).filter(p => p.level >= 3).length;
+}
+
+/* ==================== VIEW MANAGER ==================== */
+let currentView = 'welcome';
+
+function showView(name) {
+  if (name === 'quiz') return;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById(`view-${name}`);
+  if (el) el.classList.add('active');
+  currentView = name;
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === name);
+  });
+  if (name === 'home') renderDashboard();
+  else if (name === 'grid') renderGrid();
+  else if (name === 'tips') renderTips();
+  else if (name === 'stats') renderStats();
+}
+
+/* ==================== WELCOME ==================== */
+function submitName() {
+  const name = document.getElementById('welcome-name').value.trim();
+  if (!name) return;
+  state.profile.name = name;
+  state.profile.createdAt = Date.now();
+  saveState();
+  document.getElementById('bottom-nav').style.display = 'flex';
+  showView('home');
+}
+
+/* ==================== DASHBOARD ==================== */
+function coloredCount() {
+  // Count all problems that have a color (any bestColor > 0, i.e. not white)
+  return Object.entries(state.problems).filter(([k, p]) => {
+    const sc = getSpeedClass(p, k);
+    return sc !== 'speed-none';
+  }).length;
+}
+
+function renderDashboard() {
+  const name = state.profile.name || 'Friend';
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dash-greeting').textContent = `${greet}, ${name}!`;
+  const nc = coloredCount();
+  const msgs = nc === 0 ? "Let's start learning!" : nc < 20 ? "Great start! Keep going!" : nc < 50 ? "You're making awesome progress!" : nc < 100 ? "Over halfway there!" : nc < 144 ? "Almost a multiplication master!" : "You nailed them all!";
+  document.getElementById('dash-sub').textContent = msgs;
+  document.getElementById('dash-mastered').textContent = nc;
+  document.getElementById('dash-stars').textContent = state.profile.totalStars;
+  document.getElementById('dash-streak').textContent = state.profile.dailyStreak;
+  document.getElementById('dash-sessions').textContent = state.profile.sessionsCount;
+
+  const circ = document.getElementById('progress-circle');
+  const circumference = 2 * Math.PI * 66;
+  circ.style.strokeDasharray = circumference;
+  circ.style.strokeDashoffset = circumference - (nc / 144) * circumference;
+}
+
+/* ==================== QUIZ ENGINE ==================== */
+function selectProblems() {
+  const now = Date.now();
+  const scored = Object.entries(state.problems).map(([key, p]) => {
+    // Skip retired problems (green + avg < 2s)
+    if (isRetired(key)) return { key, score: -1, level: p.level };
+    const hoursSince = p.lastSeen ? (now - p.lastSeen) / 3600000 : 999;
+    const avg = getAvgSpeed(p, key);
+    let score = 0;
+    // Prioritize slow/medium problems that need work
+    if (avg !== null && avg > 6) score = 90 + hoursSince * 2 + Math.random() * 5; // Red: highest priority
+    else if (avg !== null && avg >= 3) score = 75 + hoursSince * 1.5 + Math.random() * 5; // Yellow: high priority
+    else if (avg !== null && avg >= 2) score = 50 + hoursSince * 0.5 + Math.random() * 3; // Green 2-3s: still practice
+    else if (p.times.length === 0) score = 40 + Math.random() * 10; // New: moderate priority
+    else score = 10 + hoursSince * 0.3 + Math.random() * 3; // Already fast
+    return { key, score, level: p.level };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  const selected = [];
+  let newCount = 0;
+  for (const item of scored) {
+    if (selected.length >= 12) break;
+    if (item.score < 0) continue; // Skip retired
+    if (item.level === 0 && newCount >= 4) continue;
+    selected.push(item.key);
+    if (item.level === 0) newCount++;
+  }
+  for (let i = selected.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [selected[i], selected[j]] = [selected[j], selected[i]];
+  }
+  return selected;
+}
+
+function generateDistractors(a, b, answer) {
+  const pool = new Set();
+  pool.add(a * (b + 1));
+  pool.add(a * (b - 1));
+  pool.add((a + 1) * b);
+  pool.add((a - 1) * b);
+  pool.add(a + b);
+  pool.add(answer + a);
+  pool.add(answer - a);
+  pool.add(answer + b);
+  pool.add(answer + 10);
+  pool.add(answer - 10);
+  pool.add(answer + 1);
+  pool.add(answer - 1);
+  pool.delete(answer);
+  pool.delete(0);
+  const valid = [...pool].filter(n => n > 0 && n <= 144);
+  for (let i = valid.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [valid[i], valid[j]] = [valid[j], valid[i]];
+  }
+  return valid.slice(0, 3);
+}
+
+function startQuiz() {
+  quiz = { problems: selectProblems(), index: 0, results: [], streak: 0, sessionStars: 0, startTime: 0, answered: false };
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-quiz').classList.add('active');
+  document.getElementById('quiz-accuracy').textContent = '';
+  currentView = 'quiz';
+  showProblem();
+}
+
+function showProblem() {
+  if (quiz.index >= quiz.problems.length) return showResults();
+  quiz.answered = false;
+  const key = quiz.problems[quiz.index];
+  const [a, b] = key.split('x').map(Number);
+  const answer = a * b;
+  const prob = state.problems[key];
+
+  document.getElementById('quiz-counter').textContent = `${quiz.index + 1}/12`;
+  document.getElementById('quiz-bar').style.width = `${(quiz.index / 12) * 100}%`;
+  document.getElementById('quiz-a').textContent = a;
+  document.getElementById('quiz-b').textContent = b;
+  document.getElementById('quiz-feedback').innerHTML = '';
+
+  const streakBadge = document.getElementById('quiz-streak-badge');
+  streakBadge.textContent = `🔥 ${quiz.streak}`;
+  streakBadge.classList.toggle('visible', quiz.streak >= 2);
+
+  const area = document.getElementById('quiz-answer-area');
+  const useMultipleChoice = Math.random() < 0.75;
+  if (useMultipleChoice) {
+    const distractors = generateDistractors(a, b, answer);
+    const options = [answer, ...distractors];
+    for (let i = options.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [options[i], options[j]] = [options[j], options[i]];
+    }
+    area.innerHTML = `<div class="quiz-choices">${options.map(o =>
+      `<button class="choice-btn" data-val="${o}" onclick="submitAnswer(${o})">${o}</button>`
+    ).join('')}</div>`;
+  } else {
+    area.innerHTML = `<div class="typed-area">
+      <input class="typed-input" id="typed-ans" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off">
+      <button class="btn btn-primary" style="margin-top:12px;min-width:160px" onclick="submitTyped()">Check</button>
+    </div>`;
+    setTimeout(() => document.getElementById('typed-ans')?.focus(), 100);
+    document.getElementById('typed-ans')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') submitTyped();
+    });
+  }
+  quiz.startTime = Date.now();
+}
+
+function submitTyped() {
+  const input = document.getElementById('typed-ans');
+  if (!input || quiz.answered) return;
+  const val = parseInt(input.value);
+  if (isNaN(val)) return;
+  submitAnswer(val);
+}
+
+function submitAnswer(val) {
+  if (quiz.answered) return;
+  quiz.answered = true;
+  const key = quiz.problems[quiz.index];
+  const [a, b] = key.split('x').map(Number);
+  const answer = a * b;
+  const correct = val === answer;
+  const elapsed = (Date.now() - quiz.startTime) / 1000;
+  const prob = state.problems[key];
+  const isTyped = !!document.getElementById('typed-ans');
+
+  let starsEarned = 0;
+  if (correct) {
+    starsEarned += isTyped ? 2 : 1;
+    if (elapsed < 3) starsEarned += 1;
+    quiz.streak++;
+  } else {
+    quiz.streak = 0;
+  }
+
+  // Track response time (only multiple choice — typed input takes longer to type, not fair)
+  if (correct && !isTyped) {
+    const cappedTime = Math.min(elapsed, 20); // Cap at 20s — anything longer isn't a real attempt
+    prob.times.push(cappedTime);
+    if (prob.times.length > 3) prob.times = prob.times.slice(-3);
+    // Sync time to commutative partner
+    if (a !== b) {
+      const pp = state.problems[`${b}x${a}`];
+      pp.times.push(cappedTime);
+      if (pp.times.length > 3) pp.times = pp.times.slice(-3);
+    }
+    // Update best color (ratchet — only goes up)
+    updateBestColor(key);
+  }
+
+  const prevLevel = prob.level;
+  updateMastery(key, correct);
+  const newLevel = state.problems[key].level;
+  const leveledUp = newLevel > prevLevel;
+  const newlyMastered = newLevel === 3 && prevLevel < 3;
+  if (newlyMastered) starsEarned += 3;
+
+  quiz.sessionStars += starsEarned;
+  state.profile.totalStars += starsEarned;
+
+  quiz.results.push({ key, a, b, answer, given: val, correct, elapsed, starsEarned, leveledUp, newlyMastered, newLevel });
+
+  // Update commutative partner mastery
+  if (a !== b) {
+    const partner = `${b}x${a}`;
+    const pp = state.problems[partner];
+    if (correct && pp.level < newLevel) {
+      pp.correct++;
+      pp.lastSeen = Date.now();
+    }
+  }
+
+  // Update accuracy display
+  const answered = quiz.results.length + 1;
+  const correctSoFar = quiz.results.filter(r => r.correct).length + (correct ? 1 : 0);
+  const pct = Math.round((correctSoFar / answered) * 100);
+  const accEl = document.getElementById('quiz-accuracy');
+  accEl.textContent = `${pct}%`;
+  accEl.style.color = pct >= 80 ? 'var(--mastered)' : pct >= 50 ? '#FFC107' : 'var(--wrong-color)';
+
+  // Visual feedback
+  const feedbackEl = document.getElementById('quiz-feedback');
+  const speedClass = getSpeedClass(prob, key);
+  const showTip = speedClass !== 'speed-fast' && speedClass !== 'speed-retired';
+  let delay = correct ? 1200 : 2200;
+
+  if (correct) {
+    playSound('correct');
+    if (starsEarned > 0) floatStar(starsEarned);
+    feedbackEl.innerHTML = `<span class="feedback-correct">${pickRandom(CORRECT_MSGS)}</span>`;
+    if (isTyped) {
+      const inp = document.getElementById('typed-ans');
+      if (inp) inp.classList.add('correct');
+    } else {
+      document.querySelector(`.choice-btn[data-val="${val}"]`)?.classList.add('correct');
+    }
+  } else {
+    playSound('wrong');
+    feedbackEl.innerHTML = `<span class="feedback-wrong">${pickRandom(WRONG_MSGS)} ${a} × ${b} = ${answer}</span>`;
+    if (isTyped) {
+      const inp = document.getElementById('typed-ans');
+      if (inp) inp.classList.add('wrong');
+    } else {
+      document.querySelector(`.choice-btn[data-val="${val}"]`)?.classList.add('wrong');
+      setTimeout(() => {
+        document.querySelector(`.choice-btn[data-val="${answer}"]`)?.classList.add('reveal');
+      }, 300);
+    }
+  }
+
+  // Show inline tip for any non-green/gold problem (both correct and wrong)
+  if (showTip) {
+    const specificTip = getSpecificTip(a, b);
+    feedbackEl.innerHTML += `<div class="tip-bubble">
+      <div class="tip-label">💡 Quick trick</div>
+      <div>${specificTip}</div>
+      <div class="tip-strategy">${a} × ${b} = ${answer}</div>
+    </div>`;
+    delay = correct ? 3000 : 3500;
+    const tip = getTipForProblem(a, b);
+    if (tip) unlockTip(tip.id);
+  }
+
+  if (newlyMastered) {
+    showBanner(`You mastered ${a} × ${b}!`, 'mastery');
+    checkTableCompletion(a, b);
+  } else if (leveledUp) {
+    feedbackEl.innerHTML += `<div style="color:var(--primary);font-size:14px;margin-top:4px">⬆️ Level up!</div>`;
+  }
+
+  saveState();
+  const streakBadge = document.getElementById('quiz-streak-badge');
+  streakBadge.textContent = `🔥 ${quiz.streak}`;
+  streakBadge.classList.toggle('visible', quiz.streak >= 2);
+
+  setTimeout(() => { quiz.index++; showProblem(); }, delay);
+}
+
+function updateMastery(key, correct) {
+  const p = state.problems[key];
+  p.totalAttempts++;
+  p.lastSeen = Date.now();
+  if (correct) {
+    p.correct++;
+    p.consecutive++;
+    p.wrongStreak = 0;
+    if (p.level === 0 && p.correct >= 2) p.level = 1;
+    if (p.level === 1 && p.consecutive >= 3) p.level = 2;
+    if (p.level === 2 && p.consecutive >= 6) p.level = 3;
+  } else {
+    p.consecutive = 0;
+    p.wrongStreak++;
+    if (p.wrongStreak >= 2 && p.level > 0) { p.level--; p.wrongStreak = 0; }
+  }
+}
+
+function checkTableCompletion(a, b) {
+  [a, b].forEach(n => {
+    let complete = true;
+    for (let i = 1; i <= 12; i++) {
+      if (state.problems[`${n}x${i}`].level < 3) { complete = false; break; }
+    }
+    if (complete) {
+      showBanner(`You completed the ${n}s table!`, 'mastery');
+      showConfetti();
+    }
+  });
+}
+
+/* ==================== RESULTS ==================== */
+function showResults() {
+  const correctCount = quiz.results.filter(r => r.correct).length;
+  const isPerfect = correctCount === 12;
+  if (isPerfect) {
+    quiz.sessionStars += 5;
+    state.profile.totalStars += 5;
+  }
+
+  state.profile.sessionsCount++;
+  updateDailyStreak();
+  state.sessions.push({ date: Date.now(), score: correctCount, stars: quiz.sessionStars });
+  if (state.sessions.length > 50) state.sessions = state.sessions.slice(-50);
+
+  const newAch = checkAchievements();
+  saveState();
+
+  if (isPerfect) playSound('fanfare');
+
+  const el = document.getElementById('results-content');
+  const pct = Math.round((correctCount / 12) * 100);
+  let html = `<h2>${isPerfect ? 'Perfect Score!' : correctCount >= 9 ? 'Great Job!' : correctCount >= 6 ? 'Nice Work!' : 'Keep Practicing!'}</h2>`;
+  html += `<p class="results-subtitle">${pickRandom(SESSION_MSGS)}</p>`;
+  html += `<div class="results-score">${correctCount}/12</div>`;
+  html += `<div style="font-size:22px;font-weight:800;margin-bottom:8px;color:${pct >= 80 ? 'var(--mastered)' : pct >= 50 ? '#FFC107' : 'var(--wrong-color)'}">${pct}% Accuracy</div>`;
+  html += pct === 100 ? `<div style="font-size:15px;color:var(--mastered);margin-bottom:8px;font-weight:700">Flawless! Can you do it again?</div>` :
+          pct >= 80 ? `<div style="font-size:15px;color:var(--mastered);margin-bottom:8px;font-weight:700">Great accuracy! Keep it up!</div>` :
+          pct >= 50 ? `<div style="font-size:15px;color:#F57F17;margin-bottom:8px;font-weight:700">Good effort! Aim for 80%+ next time!</div>` :
+          `<div style="font-size:15px;color:var(--wrong-color);margin-bottom:8px;font-weight:700">Keep practicing — you'll get faster!</div>`;
+  html += `<div class="results-stars">⭐ +${quiz.sessionStars} stars earned</div>`;
+
+  if (newAch.length > 0) {
+    html += `<div style="margin-bottom:16px">${newAch.map(a =>
+      `<div style="background:#FFF8E1;border-radius:10px;padding:10px;margin:6px 0;font-weight:700">🏆 ${a.icon} ${a.name} unlocked!</div>`
+    ).join('')}</div>`;
+  }
+
+  html += `<div class="results-breakdown">`;
+  quiz.results.forEach(r => {
+    const cls = r.correct ? 'was-correct' : 'was-wrong';
+    let badge = '';
+    if (r.newlyMastered) badge = `<span class="result-badge badge-new-mastery">Mastered!</span>`;
+    else if (r.leveledUp) badge = `<span class="result-badge badge-level-up">Level Up</span>`;
+    html += `<div class="result-item ${cls}">
+      <span class="result-fact">${r.a} × ${r.b} = ${r.answer}</span>
+      <span>${r.correct ? '✓' : r.given} ${badge}</span>
+    </div>`;
+  });
+  html += `</div>`;
+  html += `<button class="btn btn-primary btn-block" onclick="startQuiz()">Practice Again</button>`;
+  html += `<button class="btn btn-secondary btn-block" style="margin-top:10px" onclick="showView('home')">Back Home</button>`;
+  el.innerHTML = html;
+
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-results').classList.add('active');
+  currentView = 'results';
+
+  if (isPerfect) showConfetti();
+}
+
+function updateDailyStreak() {
+  const today = new Date().toDateString();
+  const last = state.profile.lastPracticeDate;
+  if (last === today) return;
+  const yesterday = new Date(Date.now() - 86400000).toDateString();
+  if (last === yesterday) {
+    state.profile.dailyStreak++;
+  } else if (last !== today) {
+    // Check if we should auto-freeze (5+ sessions this week)
+    const weekAgo = Date.now() - 7 * 86400000;
+    const thisWeek = state.sessions.filter(s => s.date > weekAgo).length;
+    if (thisWeek >= 5 && state.profile.dailyStreak > 0) {
+      // Freeze: keep streak
+    } else {
+      state.profile.dailyStreak = last ? 1 : 1;
+    }
+  }
+  state.profile.lastPracticeDate = today;
+  if (state.profile.dailyStreak > state.profile.bestStreak) state.profile.bestStreak = state.profile.dailyStreak;
+}
+
+function quitQuiz() { showView('home'); }
+
+/* ==================== 12x12 GRID ==================== */
+let gridFilter = 'all';
+
+function getCombinedTimes(key) {
+  // Merge times from both commutative pairs (3x4 and 4x3 share results)
+  const [a, b] = key.split('x').map(Number);
+  const times = [...(state.problems[key]?.times || [])];
+  if (a !== b) {
+    const partner = `${b}x${a}`;
+    times.push(...(state.problems[partner]?.times || []));
+  }
+  // Sort by recency (last entries are most recent) and take last 3
+  return times.slice(-3);
+}
+
+// Color ranks: 0=none, 1=slow(red), 2=medium(yellow), 3=fast(green), 4=retired(gold)
+const COLOR_RANKS = { 'speed-none': 0, 'speed-slow': 1, 'speed-medium': 2, 'speed-fast': 3, 'speed-retired': 4 };
+const RANK_TO_CLASS = ['speed-none', 'speed-slow', 'speed-medium', 'speed-fast', 'speed-retired'];
+
+function getRawSpeedRank(key) {
+  const times = getCombinedTimes(key);
+  if (times.length < 3) return 0;
+  const avg = times.reduce((a, b) => a + b, 0) / times.length;
+  if (avg < 2) return 4; // gold
+  if (avg < 3) return 3; // green
+  if (avg <= 6) return 2; // yellow
+  return 1; // red
+}
+
+function getSpeedClass(p, key) {
+  if (!key) {
+    const times = p.times || [];
+    if (times.length < 3) return 'speed-none';
+    const avg = times.reduce((a, b) => a + b, 0) / times.length;
+    if (avg < 2) return 'speed-retired';
+    if (avg < 3) return 'speed-fast';
+    if (avg <= 6) return 'speed-medium';
+    return 'speed-slow';
+  }
+  const rawRank = getRawSpeedRank(key);
+  // Ratchet: never go below the best achieved color
+  const best = p.bestColor || 0;
+  const rank = Math.max(rawRank, best);
+  // Also check commutative partner's bestColor
+  const [a, b] = key.split('x').map(Number);
+  if (a !== b) {
+    const partnerBest = state.problems[`${b}x${a}`]?.bestColor || 0;
+    const finalRank = Math.max(rank, partnerBest);
+    return RANK_TO_CLASS[finalRank];
+  }
+  return RANK_TO_CLASS[rank];
+}
+
+function updateBestColor(key) {
+  const rank = getRawSpeedRank(key);
+  const [a, b] = key.split('x').map(Number);
+  const p = state.problems[key];
+  if (rank > (p.bestColor || 0)) p.bestColor = rank;
+  // Sync to commutative partner
+  if (a !== b) {
+    const pp = state.problems[`${b}x${a}`];
+    if (rank > (pp.bestColor || 0)) pp.bestColor = rank;
+  }
+}
+
+function getAvgSpeed(p, key) {
+  const times = key ? getCombinedTimes(key) : (p.times || []);
+  if (times.length < 3) return null;
+  return times.reduce((a, b) => a + b, 0) / times.length;
+}
+
+function isRetired(key) {
+  // Retired = gold level achieved (can't go back)
+  const p = state.problems[key];
+  const [a, b] = key.split('x').map(Number);
+  const best = Math.max(p.bestColor || 0, a !== b ? (state.problems[`${b}x${a}`]?.bestColor || 0) : 0);
+  return best >= 4;
+}
+
+function renderGrid() {
+  // Filters
+  const filtersEl = document.getElementById('grid-filters');
+  filtersEl.innerHTML = ['all', 'slow', 'fast'].map(f =>
+    `<button class="filter-btn ${gridFilter === f ? 'active' : ''}" onclick="setGridFilter('${f}')">${f === 'all' ? 'All' : f === 'slow' ? 'Needs Work' : 'Fast'}</button>`
+  ).join('');
+
+  const container = document.getElementById('grid-container');
+  let html = '<div class="grid-corner"></div>';
+
+  // Column headers
+  for (let b = 1; b <= 12; b++) {
+    const gold = isRowComplete(b);
+    html += `<div class="grid-header ${gold ? 'gold' : ''}">${b}${gold ? '<span class="star-badge">⭐</span>' : ''}</div>`;
+  }
+
+  // Count speed categories for summary
+  let fastCount = 0, medCount = 0, slowCount = 0, unpracticed = 0, retiredCount = 0;
+
+  // Rows
+  for (let a = 1; a <= 12; a++) {
+    const gold = isColComplete(a);
+    html += `<div class="grid-header ${gold ? 'gold' : ''}">${a}${gold ? '<span class="star-badge">⭐</span>' : ''}</div>`;
+    for (let b = 1; b <= 12; b++) {
+      const key = `${a}x${b}`;
+      const p = state.problems[key];
+      const sc = getSpeedClass(p, key);
+      if (sc === 'speed-retired') retiredCount++;
+      else if (sc === 'speed-fast') fastCount++;
+      else if (sc === 'speed-medium') medCount++;
+      else if (sc === 'speed-slow') slowCount++;
+      else unpracticed++;
+      const dim = (gridFilter === 'slow' && (sc === 'speed-fast' || sc === 'speed-retired'))
+              || (gridFilter === 'fast' && sc !== 'speed-fast' && sc !== 'speed-retired');
+      html += `<div class="grid-cell ${sc} ${dim ? 'dim' : ''}" onclick="showCellPopover(${a},${b})" title="${a}×${b}">${sc === 'speed-retired' ? '✓' : a * b}</div>`;
+    }
+  }
+  container.innerHTML = html;
+
+  // Summary
+  document.getElementById('grid-summary').innerHTML = `
+    <div class="grid-summary-item"><div class="stat-value" style="color:#4A148C">${retiredCount}</div><div class="stat-label">Nailed (&lt;2s)</div></div>
+    <div class="grid-summary-item"><div class="stat-value" style="color:#4CAF50">${fastCount}</div><div class="stat-label">Fast (2-3s)</div></div>
+    <div class="grid-summary-item"><div class="stat-value" style="color:#FFC107">${medCount}</div><div class="stat-label">Medium (3-6s)</div></div>
+    <div class="grid-summary-item"><div class="stat-value" style="color:#EF5350">${slowCount}</div><div class="stat-label">Slow (&gt;6s)</div></div>
+  `;
+}
+
+function setGridFilter(f) { gridFilter = f; renderGrid(); }
+
+function isRowComplete(b) {
+  for (let a = 1; a <= 12; a++) if (state.problems[`${a}x${b}`].level < 3) return false;
+  return true;
+}
+function isColComplete(a) {
+  for (let b = 1; b <= 12; b++) if (state.problems[`${a}x${b}`].level < 3) return false;
+  return true;
+}
+function countCompleteTables() {
+  let count = 0;
+  for (let n = 1; n <= 12; n++) if (isColComplete(n)) count++;
+  return count;
+}
+function findHardestProblems() {
+  return Object.entries(state.problems)
+    .filter(([, p]) => p.totalAttempts > 0 && p.level < 3)
+    .sort((a, b) => (a[1].correct / (a[1].totalAttempts || 1)) - (b[1].correct / (b[1].totalAttempts || 1)))
+    .slice(0, 3)
+    .map(([k]) => k);
+}
+
+function showCellPopover(a, b) {
+  const key = `${a}x${b}`;
+  const p = state.problems[key];
+  const levelNames = ['New', 'Learning', 'Almost There', 'Mastered'];
+  const levelColors = ['var(--new)', 'var(--learning)', 'var(--almost)', 'var(--mastered)'];
+  const avg = getAvgSpeed(p, key);
+  const retired = isRetired(key);
+  const speedLabel = avg === null ? '' : retired ? '✓ Nailed it!' : avg < 3 ? '🟢 Fast' : avg <= 6 ? '🟡 Medium' : '🔴 Slow';
+  const speedDetail = avg !== null ? ` · Avg ${avg.toFixed(1)}s` : '';
+
+  // Get last 5 times from both commutative pairs
+  const allTimes = [...(p.times || [])];
+  if (a !== b) allTimes.push(...(state.problems[`${b}x${a}`]?.times || []));
+  const last5 = allTimes.slice(-5);
+
+  const overlay = document.createElement('div');
+  overlay.className = 'popover-overlay';
+  overlay.onclick = () => overlay.remove();
+
+  const pop = document.createElement('div');
+  pop.className = 'cell-popover';
+  pop.innerHTML = `
+    <div class="popover-fact">${a} × ${b} = ${a * b}</div>
+    <div class="popover-level" style="color:${levelColors[p.level]}">${levelNames[p.level]}</div>
+    ${speedLabel ? `<div style="font-weight:700;font-size:15px;margin:4px 0">${speedLabel}${speedDetail}</div>` : ''}
+    ${last5.length > 0 ? `<div style="display:flex;gap:6px;justify-content:center;margin:8px 0">
+      ${last5.map(t => {
+        const c = t < 2 ? '#4A148C' : t < 3 ? '#4CAF50' : t <= 6 ? '#C0CA33' : '#EF5350';
+        return `<div style="background:${c};color:#fff;border-radius:6px;padding:4px 8px;font-weight:800;font-size:13px">${t.toFixed(1)}s</div>`;
+      }).join('')}
+    </div>` : ''}
+    <div class="popover-stats">
+      ${p.totalAttempts > 0 ? `${p.correct}/${p.totalAttempts} correct · ${p.consecutive} in a row` : 'Not practiced yet'}
+    </div>
+    <button class="btn btn-primary" style="min-width:180px" onclick="practiceSpecific(${a},${b});this.closest('.popover-overlay').remove()">Practice This</button>
+  `;
+  overlay.appendChild(pop);
+  document.body.appendChild(overlay);
+}
+
+function practiceSpecific(a, b) {
+  const key = `${a}x${b}`;
+  const related = [];
+  for (let i = 1; i <= 12; i++) {
+    const k = `${a}x${i}`;
+    if (k !== key && state.problems[k].level < 3) related.push(k);
+  }
+  for (let i = 1; i <= 12; i++) {
+    const k = `${i}x${b}`;
+    if (k !== key && !related.includes(k) && state.problems[k].level < 3) related.push(k);
+  }
+  for (let i = related.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [related[i], related[j]] = [related[j], related[i]];
+  }
+  const problems = [key, ...related.slice(0, 11)];
+  while (problems.length < 12) {
+    const rk = `${Math.ceil(Math.random() * 12)}x${Math.ceil(Math.random() * 12)}`;
+    if (!problems.includes(rk)) problems.push(rk);
+  }
+  quiz = { problems, index: 0, results: [], streak: 0, sessionStars: 0, startTime: 0, answered: false };
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-quiz').classList.add('active');
+  currentView = 'quiz';
+  showProblem();
+}
+
+/* ==================== MENTAL MATH TIPS ==================== */
+const TIPS = [
+  // Easy — unlocked from the start
+  { id: 'ones', title: '1s: Identity', short: 'Any number × 1 stays the same!', desc: 'Multiplying by 1 gives you the same number. 7 × 1 = 7, always!', example: '8 × 1 = 8', factors: [1], icon: '1️⃣' },
+  { id: 'twos', title: '2s: Doubles', short: 'Times 2 = double the number!', desc: 'Multiplying by 2 is the same as adding the number to itself.', example: '7 × 2 = 7 + 7 = 14', factors: [2], icon: '✌️' },
+  { id: 'tens', title: '10s: Add a Zero', short: 'Times 10 = just add a zero!', desc: 'The easiest trick! Just put a 0 at the end.', example: '7 × 10 = 70', factors: [10], icon: '🔟' },
+  { id: 'fives', title: '5s: Half Then ×10', short: 'Times 5 = half the number × 10!', desc: 'Take half of the other number, then add a zero. For odd numbers, use .5 then ×10.', example: '8 × 5 → 4 × 10 = 40', factors: [5], icon: '🖐️' },
+  { id: 'elevens_small', title: '11s: Repeat Digit', short: 'For 1-9 × 11, repeat the digit!', desc: 'Multiplying 1-9 by 11? Just write the digit twice!', example: '7 × 11 = 77, 4 × 11 = 44', factors: [11], icon: '1️⃣1️⃣' },
+  { id: 'commutative', title: 'Flip It!', short: 'a×b = b×a, try it both ways!', desc: "If 3×8 is hard, think of 8×3 instead. The order doesn't matter!", example: '3 × 8 = 8 × 3 = 24', factors: 'commutative', icon: '🔄' },
+  // Medium — unlock by practicing
+  { id: 'fours', title: '4s: Double-Double', short: 'Times 4 = double it twice!', desc: 'Multiply by 2, then multiply by 2 again. Two easy steps!', example: '7 × 4 → 14 → 28', factors: [4], icon: '4️⃣' },
+  { id: 'nines_finger', title: '9s: Finger Trick', short: 'Hold up 10 fingers, fold down the nth!', desc: 'To find 9 × n, hold up 10 fingers. Fold down finger #n. Fingers before = tens, fingers after = ones.', example: '9 × 7: fold finger 7 → 6 and 3 → 63', factors: [9], icon: '🖐️' },
+  { id: 'nines_sum', title: '9s: Digit Sum = 9', short: 'Digits of 9× always add up to 9!', desc: 'The digits of any 9× answer (up to 9×10) always add up to 9. The tens digit is one less than what you multiply by.', example: '9 × 4 = 36, 3+6 = 9', factors: [9], icon: '9️⃣' },
+  { id: 'sixes', title: '6s: Even Pattern', short: 'Even × 6: answer ends in the even digit!', desc: 'When an even number is multiplied by 6, the ones digit matches the even number.', example: '6 × 4 = 24, 6 × 8 = 48', factors: [6], icon: '6️⃣' },
+  { id: 'eights', title: '8s: Double-Double-Double', short: 'Times 8 = double three times!', desc: 'Double the number, double again, double once more. Three doubles!', example: '7 × 8 → 14 → 28 → 56', factors: [8], icon: '8️⃣' },
+  { id: 'elevens_big', title: '11s: Split & Add', short: 'For 10+ × 11, split and insert the sum!', desc: 'For 11 × a two-digit number: split the digits and put their sum in the middle.', example: '11 × 12: 1_(1+2)_2 = 132', factors: [11], icon: '🔢' },
+  // Advanced — unlock with harder problems
+  { id: 'twelves', title: '12s: Break into 10+2', short: 'Times 12 = times 10 + times 2!', desc: 'Break 12 into 10+2: multiply by 10, multiply by 2, add them together.', example: '7 × 12 = 70 + 14 = 84', factors: [12], icon: '🔓' },
+  { id: 'squares', title: 'Perfect Squares', short: 'Memorize n×n as landmarks!', desc: 'Perfect squares (1,4,9,16,25,36,49,64,81,100,121,144) are great landmarks to build from.', example: '7×7=49, 8×8=64, 9×9=81', factors: 'squares', icon: '⬛' },
+  { id: 'near_squares', title: 'Near Squares', short: 'n×(n+1) = n² + n!', desc: 'If you know the square, the next one is just adding n more. Like 7×8 = 7×7 + 7 = 49+7 = 56.', example: '7×8 = 49+7 = 56', factors: 'near_squares', icon: '📐' },
+];
+
+function getSpecificTip(a, b) {
+  const answer = a * b;
+  // Return a worked-out strategy specific to these numbers
+  if (a === 1 || b === 1) { const o = a === 1 ? b : a; return `Any number × 1 = itself. So it's just ${o}!`; }
+  if (a === 10 || b === 10) { const o = a === 10 ? b : a; return `Add a zero to ${o} → ${answer}`; }
+  if (a === 2 || b === 2) { const o = a === 2 ? b : a; return `Double ${o}: ${o} + ${o} = ${answer}`; }
+  if (a === 5 || b === 5) { const o = a === 5 ? b : a; return o % 2 === 0 ? `Half of ${o} is ${o/2}, then ×10 → ${answer}` : `${o} × 5: count by 5s → ${Array.from({length:o},(_,i)=>(i+1)*5).join(', ')}`; }
+  if (a === 11 || b === 11) { const o = a === 11 ? b : a; if (o <= 9) return `Just repeat the digit: ${o}${o}!`; return `${o} × 10 + ${o} = ${o*10} + ${o} = ${answer}`; }
+  if (a === 4 || b === 4) { const o = a === 4 ? b : a; return `Double-double: ${o} → ${o*2} → ${o*4}`; }
+  if (a === 9 || b === 9) { const o = a === 9 ? b : a; return `${o} × 10 − ${o} = ${o*10} − ${o} = ${answer}. Digits add to 9!`; }
+  if (a === 8 || b === 8) { const o = a === 8 ? b : a; return `Double three times: ${o} → ${o*2} → ${o*4} → ${o*8}`; }
+  if (a === 3 || b === 3) { const o = a === 3 ? b : a; return `Triple ${o}: ${o} + ${o} + ${o} = ${answer}`; }
+  if (a === 12 || b === 12) { const o = a === 12 ? b : a; return `${o}×10 + ${o}×2 = ${o*10} + ${o*2} = ${answer}`; }
+  if (a === b) return `${a} squared = ${answer}. Memorize this landmark!`;
+  if (Math.abs(a-b) === 1) { const s = Math.min(a,b); return `${s}×${s}=${s*s}, then add ${s} → ${answer}`; }
+  if (a === 6 || b === 6) { const o = a === 6 ? b : a; return `${o}×3 = ${o*3}, then double → ${answer}`; }
+  if (a === 7 || b === 7) { const o = a === 7 ? b : a; return `${o}×5 + ${o}×2 = ${o*5} + ${o*2} = ${answer}`; }
+  return `Break it up: ${a}×${Math.floor(b/2)} = ${a*Math.floor(b/2)}, ×2 = ${answer}`;
+}
+
+function getTipForProblem(a, b) {
+  for (const tip of TIPS) {
+    if (tip.factors === 'commutative') continue; // Only show as fallback
+    if (tip.factors === 'squares' && a === b) return tip;
+    if (tip.factors === 'near_squares' && Math.abs(a - b) === 1) return tip;
+    if (Array.isArray(tip.factors) && (tip.factors.includes(a) || tip.factors.includes(b))) return tip;
+  }
+  return TIPS.find(t => t.id === 'commutative');
+}
+
+function unlockTip(id) {
+  if (!state.tipsUnlocked.includes(id)) {
+    state.tipsUnlocked.push(id);
+    saveState();
+  }
+}
+
+function renderTips() {
+  const el = document.getElementById('tips-list');
+  el.innerHTML = TIPS.map(tip => {
+    const unlocked = state.tipsUnlocked.includes(tip.id);
+    return `<div class="tip-card ${unlocked ? '' : 'locked'}">
+      <div class="tip-title">${tip.icon} ${tip.title} ${unlocked ? '' : '🔒'}</div>
+      <div class="tip-desc">${unlocked ? tip.desc : 'Keep practicing to unlock this tip!'}</div>
+      ${unlocked ? `<div class="tip-example">${tip.example}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+/* ==================== ACHIEVEMENTS ==================== */
+const ACHIEVEMENTS = [
+  { id: 'first_session', name: 'First Steps', desc: 'Complete your first practice', icon: '👶', check: () => state.profile.sessionsCount >= 1 },
+  { id: 'master_10', name: 'Getting Started', desc: 'Master 10 facts', icon: '🌱', check: () => masteredCount() >= 10 },
+  { id: 'master_25', name: 'Quarter Way', desc: 'Master 25 facts', icon: '🌿', check: () => masteredCount() >= 25 },
+  { id: 'master_50', name: 'Halfway Hero', desc: 'Master 50 facts', icon: '🌳', check: () => masteredCount() >= 50 },
+  { id: 'master_100', name: 'Century Club', desc: 'Master 100 facts', icon: '💯', check: () => masteredCount() >= 100 },
+  { id: 'master_144', name: 'Multiplication Master', desc: 'Master all 144 facts', icon: '👑', check: () => masteredCount() >= 144 },
+  { id: 'table_1', name: '1s Champion', desc: 'Complete the 1s table', icon: '🥇', check: () => isColComplete(1) },
+  { id: 'table_2', name: '2s Champion', desc: 'Complete the 2s table', icon: '🥇', check: () => isColComplete(2) },
+  { id: 'table_3', name: '3s Champion', desc: 'Complete the 3s table', icon: '🥇', check: () => isColComplete(3) },
+  { id: 'table_4', name: '4s Champion', desc: 'Complete the 4s table', icon: '🥇', check: () => isColComplete(4) },
+  { id: 'table_5', name: '5s Champion', desc: 'Complete the 5s table', icon: '🥇', check: () => isColComplete(5) },
+  { id: 'table_6', name: '6s Champion', desc: 'Complete the 6s table', icon: '🥇', check: () => isColComplete(6) },
+  { id: 'table_7', name: '7s Champion', desc: 'Complete the 7s table', icon: '🥇', check: () => isColComplete(7) },
+  { id: 'table_8', name: '8s Champion', desc: 'Complete the 8s table', icon: '🥇', check: () => isColComplete(8) },
+  { id: 'table_9', name: '9s Champion', desc: 'Complete the 9s table', icon: '🥇', check: () => isColComplete(9) },
+  { id: 'table_10', name: '10s Champion', desc: 'Complete the 10s table', icon: '🥇', check: () => isColComplete(10) },
+  { id: 'table_11', name: '11s Champion', desc: 'Complete the 11s table', icon: '🥇', check: () => isColComplete(11) },
+  { id: 'table_12', name: '12s Champion', desc: 'Complete the 12s table', icon: '🥇', check: () => isColComplete(12) },
+  { id: 'streak_5', name: 'Hot Streak', desc: '5 correct in a row', icon: '🔥', check: () => state.profile.bestAnswerStreak >= 5 },
+  { id: 'streak_10', name: 'On Fire', desc: '10 correct in a row', icon: '🔥', check: () => state.profile.bestAnswerStreak >= 10 },
+  { id: 'streak_20', name: 'Unstoppable', desc: '20 correct in a row', icon: '💥', check: () => state.profile.bestAnswerStreak >= 20 },
+  { id: 'speed_demon', name: 'Speed Demon', desc: 'Answer in under 2 seconds', icon: '⚡', check: () => state.sessions.some(s => s.fastAnswer) },
+  { id: 'perfect', name: 'Perfect Session', desc: 'Get 12/12 correct', icon: '💎', check: () => state.sessions.some(s => s.score === 12) },
+  { id: 'daily_3', name: 'Dedicated', desc: '3-day practice streak', icon: '📅', check: () => state.profile.dailyStreak >= 3 },
+  { id: 'daily_7', name: 'Week Warrior', desc: '7-day practice streak', icon: '🗓️', check: () => state.profile.dailyStreak >= 7 },
+];
+
+function checkAchievements() {
+  // Track best answer streak
+  if (!state.profile.bestAnswerStreak) state.profile.bestAnswerStreak = 0;
+  if (quiz.streak > state.profile.bestAnswerStreak) state.profile.bestAnswerStreak = quiz.streak;
+
+  // Track fast answers and perfect sessions
+  const lastResult = quiz.results[quiz.results.length - 1];
+  if (lastResult && lastResult.elapsed < 2 && lastResult.correct) {
+    if (state.sessions.length > 0) state.sessions[state.sessions.length - 1].fastAnswer = true;
+    else state._hasFastAnswer = true;
+  }
+
+  const newlyUnlocked = [];
+  for (const ach of ACHIEVEMENTS) {
+    if (state.achievements.includes(ach.id)) continue;
+    if (ach.check()) {
+      state.achievements.push(ach.id);
+      newlyUnlocked.push(ach);
+      playSound('fanfare');
+      showBanner(`${ach.icon} ${ach.name} unlocked!`, 'achievement');
+    }
+  }
+  return newlyUnlocked;
+}
+
+function renderStats() {
+  const el = document.getElementById('stats-overview');
+  el.innerHTML = `
+    <div class="stat-card"><div class="stat-value">⭐ ${state.profile.totalStars}</div><div class="stat-label">Total Stars</div></div>
+    <div class="stat-card"><div class="stat-value">🔥 ${state.profile.dailyStreak}</div><div class="stat-label">Day Streak</div></div>
+    <div class="stat-card"><div class="stat-value">${state.profile.sessionsCount}</div><div class="stat-label">Sessions</div></div>
+  `;
+
+  const grid = document.getElementById('achievements-grid');
+  grid.innerHTML = ACHIEVEMENTS.map(ach => {
+    const unlocked = state.achievements.includes(ach.id);
+    return `<div class="achievement-card ${unlocked ? 'unlocked' : 'locked'}">
+      <div class="achievement-icon">${ach.icon}</div>
+      <div class="achievement-name">${ach.name}</div>
+      <div class="achievement-desc">${ach.desc}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ==================== CELEBRATIONS ==================== */
+function showConfetti() {
+  const container = document.createElement('div');
+  container.className = 'confetti-container';
+  const colors = ['#FF7043','#FFC107','#4CAF50','#7C4DFF','#FF4081','#00BCD4','#FFD54F'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = Math.random() * 0.6 + 's';
+    piece.style.animationDuration = (2 + Math.random() * 1.5) + 's';
+    piece.style.width = (6 + Math.random() * 8) + 'px';
+    piece.style.height = (6 + Math.random() * 8) + 'px';
+    container.appendChild(piece);
+  }
+  document.body.appendChild(container);
+  setTimeout(() => container.remove(), 3500);
+}
+
+function floatStar(count) {
+  for (let i = 0; i < count; i++) {
+    const star = document.createElement('div');
+    star.className = 'star-anim';
+    star.textContent = '⭐';
+    star.style.left = (40 + Math.random() * 20) + '%';
+    star.style.top = '50%';
+    star.style.animationDelay = (i * 0.15) + 's';
+    document.body.appendChild(star);
+    setTimeout(() => star.remove(), 1200);
+  }
+}
+
+function showBanner(text, type) {
+  const banner = document.createElement('div');
+  banner.className = `banner banner-${type}`;
+  banner.textContent = text;
+  document.body.appendChild(banner);
+  setTimeout(() => banner.remove(), 3200);
+}
+
+/* ==================== SOUNDS (Web Audio API) ==================== */
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioCtx;
+}
+
+function playSound(type) {
+  try {
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+
+    if (type === 'correct') {
+      [523, 659, 784].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.12, now + i * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.25);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now + i * 0.08);
+        osc.stop(now + i * 0.08 + 0.3);
+      });
+    } else if (type === 'wrong') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = 200;
+      osc.frequency.linearRampToValueAtTime(150, now + 0.2);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.35);
+    } else if (type === 'fanfare') {
+      [523, 659, 784, 1047].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.12, now + i * 0.12);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.4);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now + i * 0.12);
+        osc.stop(now + i * 0.12 + 0.5);
+      });
+    }
+  } catch (e) {}
+}
+
+/* ==================== MESSAGES ==================== */
+const CORRECT_MSGS = ["Great job!", "You got it!", "Excellent!", "Way to go!", "Brilliant!", "That's right!", "Amazing!", "Perfect!", "Nailed it!", "Awesome!"];
+const WRONG_MSGS = ["Almost!", "Not quite.", "Keep trying!", "Good effort!", "You'll get it!"];
+const SESSION_MSGS = ["Great practice session!", "You're getting stronger!", "Awesome work today!", "Keep it up!", "Every session makes you better!"];
+
+function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+/* ==================== FIREBASE ==================== */
+let db = null;
+let syncTimeout = null;
+
+function debouncedSync() {
+  if (!db) return;
+  clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(syncToFirebase, 500);
+}
+
+async function initFirebase() {
+  try {
+    if (typeof firebase === 'undefined') return;
+    const app = firebase.app();
+    db = firebase.firestore();
+    const auth = firebase.auth();
+
+    auth.onAuthStateChanged(async user => {
+      if (user) {
+        state.firebaseUid = user.uid;
+        saveState();
+        await syncFromFirebase();
+      } else {
+        try { await auth.signInAnonymously(); } catch(e) { console.warn('Auth failed', e); }
+      }
+    });
+  } catch(e) { console.warn('Firebase init skipped', e); }
+}
+
+async function syncToFirebase() {
+  if (!db || !state.firebaseUid) return;
+  try {
+    await db.collection('users').doc(state.firebaseUid).set({
+      profile: state.profile,
+      problems: state.problems,
+      achievements: state.achievements,
+      sessions: state.sessions.slice(-20),
+      tipsUnlocked: state.tipsUnlocked,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  } catch(e) { console.warn('Sync to failed', e); }
+}
+
+async function syncFromFirebase() {
+  if (!db || !state.firebaseUid) return;
+  try {
+    const doc = await db.collection('users').doc(state.firebaseUid).get();
+    if (doc.exists) {
+      const remote = doc.data();
+      mergeState(remote);
+      saveState();
+      if (currentView === 'home') renderDashboard();
+    }
+  } catch(e) { console.warn('Sync from failed', e); }
+}
+
+function mergeState(remote) {
+  if (!remote) return;
+  // Take higher mastery and more recent timestamps
+  if (remote.problems) {
+    for (const [key, rp] of Object.entries(remote.problems)) {
+      const lp = state.problems[key];
+      if (!lp) { state.problems[key] = rp; continue; }
+      if (rp.level > lp.level) {
+        state.problems[key] = rp;
+      } else if (rp.level === lp.level && rp.lastSeen > lp.lastSeen) {
+        state.problems[key] = rp;
+      }
+    }
+  }
+  if (remote.profile) {
+    state.profile.totalStars = Math.max(state.profile.totalStars, remote.profile.totalStars || 0);
+    state.profile.dailyStreak = Math.max(state.profile.dailyStreak, remote.profile.dailyStreak || 0);
+    state.profile.bestStreak = Math.max(state.profile.bestStreak || 0, remote.profile.bestStreak || 0);
+    state.profile.sessionsCount = Math.max(state.profile.sessionsCount, remote.profile.sessionsCount || 0);
+  }
+  if (remote.achievements) {
+    for (const a of remote.achievements) {
+      if (!state.achievements.includes(a)) state.achievements.push(a);
+    }
+  }
+  if (remote.tipsUnlocked) {
+    for (const t of remote.tipsUnlocked) {
+      if (!state.tipsUnlocked.includes(t)) state.tipsUnlocked.push(t);
+    }
+  }
+}
+
+/* ==================== SYNC PIN SYSTEM ==================== */
+async function generateSyncPin() {
+  if (!db || !state.firebaseUid) return null;
+  const pin = String(Math.floor(100000 + Math.random() * 900000));
+  try {
+    // Make sure user data is saved first
+    await syncToFirebase();
+    await db.collection('sync_pins').doc(pin).set({
+      uid: state.firebaseUid,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
+    });
+    return pin;
+  } catch(e) {
+    console.error('PIN gen failed:', e.code, e.message);
+    return null;
+  }
+}
+
+async function redeemSyncPin(pin) {
+  if (!db) return false;
+  try {
+    const doc = await db.collection('sync_pins').doc(pin).get();
+    if (!doc.exists) return false;
+    const data = doc.data();
+    if (data.expiresAt.toDate() < new Date()) return false;
+    // Sync from that user's data
+    const userDoc = await db.collection('users').doc(data.uid).get();
+    if (userDoc.exists) {
+      mergeState(userDoc.data());
+      state.firebaseUid = data.uid;
+      saveState();
+      await syncToFirebase();
+      return true;
+    }
+    return false;
+  } catch(e) { console.warn('PIN redeem failed', e); return false; }
+}
+
+function showSyncModal() {
+  const connected = !!(db && state.firebaseUid);
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+
+  if (!connected) {
+    overlay.innerHTML = `<div class="modal">
+      <h3>Sync Across Devices</h3>
+      <div style="font-size:48px;margin-bottom:12px">☁️</div>
+      <p style="color:var(--text-light);font-size:14px;margin-bottom:12px">Firebase is not set up yet. To enable cross-device sync, add your Firebase config to the bottom of index.html.</p>
+      <p style="color:var(--text-light);font-size:13px;margin-bottom:16px">Your progress is saved locally on this device and won't be lost.</p>
+      <button class="btn btn-secondary btn-block" onclick="this.closest('.modal-overlay').remove()">Got It</button>
+    </div>`;
+  } else {
+    overlay.innerHTML = `<div class="modal">
+      <h3>Sync Across Devices</h3>
+      <p style="color:var(--mastered);font-size:13px;font-weight:700;margin-bottom:12px">☁️ Connected</p>
+      <p style="color:var(--text-light);font-size:14px;margin-bottom:16px">Share your progress between phone, tablet, and computer.</p>
+      <button class="btn btn-primary btn-block" onclick="handleGeneratePin(this)">Get Sync Code</button>
+      <div style="margin:12px 0;color:var(--text-light);font-weight:700">— or —</div>
+      <p style="font-size:14px;margin-bottom:8px;font-weight:700">Enter a code from another device:</p>
+      <input class="pin-input" id="pin-entry" type="text" inputmode="numeric" maxlength="6" placeholder="000000">
+      <button class="btn btn-secondary btn-block" style="margin-top:10px" onclick="handleRedeemPin()">Link Device</button>
+      <button class="btn btn-secondary btn-block" style="margin-top:8px;opacity:.6" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+      <div id="sync-status" style="margin-top:12px;font-size:14px;font-weight:700"></div>
+    </div>`;
+  }
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+async function handleGeneratePin(btn) {
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  const status = document.getElementById('sync-status');
+  try {
+    const pin = await generateSyncPin();
+    if (pin) {
+      status.innerHTML = `<div>Your sync code:</div><div class="pin-display">${pin}</div><div style="font-size:12px;color:var(--text-light)">Expires in 24 hours</div>`;
+    } else {
+      status.innerHTML = `<span style="color:var(--wrong-color)">Could not generate code. Check that Anonymous Auth and Firestore are enabled in Firebase console.</span>`;
+    }
+  } catch(e) {
+    status.innerHTML = `<span style="color:var(--wrong-color)">Error: ${e.message}</span>`;
+  }
+  btn.disabled = false;
+  btn.textContent = 'Get Sync Code';
+}
+
+async function handleRedeemPin() {
+  const pin = document.getElementById('pin-entry')?.value.trim();
+  if (!pin || pin.length !== 6) return;
+  const status = document.getElementById('sync-status');
+  status.textContent = 'Linking...';
+  const ok = await redeemSyncPin(pin);
+  if (ok) {
+    status.innerHTML = '<span style="color:var(--mastered)">Linked! Your progress has been synced.</span>';
+    renderDashboard();
+  } else {
+    status.innerHTML = '<span style="color:var(--wrong-color)">Invalid or expired code.</span>';
+  }
+}
+
+/* ==================== INIT ==================== */
+function syncCommutativePairs() {
+  // Ensure commutative pairs (4x7 and 7x4) always share the same bestColor and times
+  for (let a = 1; a <= 12; a++) {
+    for (let b = a + 1; b <= 12; b++) {
+      const k1 = `${a}x${b}`, k2 = `${b}x${a}`;
+      const p1 = state.problems[k1], p2 = state.problems[k2];
+      if (!p1 || !p2) continue;
+      // Sync bestColor: take the higher one
+      const best = Math.max(p1.bestColor || 0, p2.bestColor || 0);
+      p1.bestColor = best;
+      p2.bestColor = best;
+      // Sync times: merge and keep last 3
+      const allTimes = [...(p1.times || []), ...(p2.times || [])].slice(-3);
+      p1.times = [...allTimes];
+      p2.times = [...allTimes];
+    }
+  }
+}
+
+function init() {
+  loadState();
+  syncCommutativePairs();
+
+  if (state.profile.name) {
+    document.getElementById('bottom-nav').style.display = 'flex';
+    showView('home');
+  } else {
+    document.getElementById('view-welcome').classList.add('active');
+  }
+
+  // Welcome form
+  document.getElementById('welcome-go').addEventListener('click', submitName);
+  document.getElementById('welcome-name').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitName();
+  });
+
+  // Nav buttons
+  document.querySelectorAll('.nav-btn[data-view]').forEach(btn => {
+    if (btn.dataset.view !== 'quiz') {
+      btn.addEventListener('click', () => showView(btn.dataset.view));
+    }
+  });
+
+  // Start with easy tips unlocked (easy to hard progression)
+  ['ones', 'twos', 'tens', 'fives', 'elevens_small', 'commutative'].forEach(id => unlockTip(id));
+
+  // Unlock additional tips for problems already encountered
+  for (const [key, p] of Object.entries(state.problems)) {
+    if (p.totalAttempts > 0) {
+      const [a, b] = key.split('x').map(Number);
+      const tip = getTipForProblem(a, b);
+      if (tip) unlockTip(tip.id);
+    }
+  }
+
+  // Firebase (optional)
+  initFirebase();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+
+</body>
+</html>
