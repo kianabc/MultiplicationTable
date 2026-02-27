@@ -1405,10 +1405,8 @@ function showCellPopover(a, b) {
   const speedLabel = avg === null ? '' : retired ? '✓ Nailed it!' : avg < 3 ? '🟢 Fast' : avg <= 6 ? '🟡 Medium' : '🔴 Slow';
   const speedDetail = avg !== null ? ` · Avg ${avg.toFixed(1)}s` : '';
 
-  // Get last 5 times from both commutative pairs
-  const allTimes = [...(p.times || [])];
-  if (a !== b) allTimes.push(...(state.problems[`${b}x${a}`]?.times || []));
-  const last5 = allTimes.slice(-5);
+  // Times are already synced between commutative pairs, so just use this problem's times
+  const lastTimes = (p.times || []).slice(-3);
 
   const overlay = document.createElement('div');
   overlay.className = 'popover-overlay';
@@ -1420,8 +1418,8 @@ function showCellPopover(a, b) {
     <div class="popover-fact">${a} × ${b} = ${a * b}</div>
     <div class="popover-level" style="color:${levelColors[p.level]}">${levelNames[p.level]}</div>
     ${speedLabel ? `<div style="font-weight:700;font-size:15px;margin:4px 0">${speedLabel}${speedDetail}</div>` : ''}
-    ${last5.length > 0 ? `<div style="display:flex;gap:6px;justify-content:center;margin:8px 0">
-      ${last5.map(t => {
+    ${lastTimes.length > 0 ? `<div style="display:flex;gap:6px;justify-content:center;margin:8px 0">
+      ${lastTimes.map(t => {
         const c = t < 2 ? '#4A148C' : t < 3 ? '#4CAF50' : t <= 6 ? '#C0CA33' : '#EF5350';
         return `<div style="background:${c};color:#fff;border-radius:6px;padding:4px 8px;font-weight:800;font-size:13px">${t.toFixed(1)}s</div>`;
       }).join('')}
