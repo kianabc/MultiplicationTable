@@ -893,30 +893,92 @@ function renderDashboard() {
 /* ==================== QUIZ ENGINE ==================== */
 function selectProblems() {
   const now = Date.now();
-  const scored = Object.entries(state.problems).map(([key, p]) => {
-    // Skip retired problems (green + avg < 2s)
-    if (isRetired(key)) return { key, score: -1, level: p.level };
-    const hoursSince = p.lastSeen ? (now - p.lastSeen) / 3600000 : 999;
-    const avg = getAvgSpeed(p, key);
-    let score = 0;
-    // Prioritize slow/medium problems that need work
-    if (avg !== null && avg > 6) score = 90 + hoursSince * 2 + Math.random() * 5; // Red: highest priority
-    else if (avg !== null && avg >= 3) score = 75 + hoursSince * 1.5 + Math.random() * 5; // Yellow: high priority
-    else if (avg !== null && avg >= 2) score = 50 + hoursSince * 0.5 + Math.random() * 3; // Green 2-3s: still practice
-    else if (p.times.length === 0) score = 40 + Math.random() * 10; // New: moderate priority
-    else score = 10 + hoursSince * 0.3 + Math.random() * 3; // Already fast
-    return { key, score, level: p.level };
-  });
-  scored.sort((a, b) => b.score - a.score);
-  const selected = [];
-  let newCount = 0;
-  for (const item of scored) {
-    if (selected.length >= 12) break;
-    if (item.score < 0) continue; // Skip retired
-    if (item.level === 0 && newCount >= 4) continue;
-    selected.push(item.key);
-    if (item.level === 0) newCount++;
+  // Difficulty tiers: easiest tables first, hardest last
+  // Tier 1 (easiest): 1s, 10s, 11s, 2s, 5s
+  // Tier 2 (medium):  9s, 4s, 3s, 12s
+  // Tier 3 (harder):  6s, 7s, 8s
+  const tierFor = n => [1, 10, 11, 2, 5].includes(n) ? 1 : [9, 4, 3, 12].includes(n) ? 2 : 3;
+  function problemTier(key) {
+    const [a, b] = key.split('x').map(Number);
+    return Math.min(tierFor(a), tierFor(b)); // use the easier factor
   }
+
+  // Categorize all non-retired problems
+  const needsWork = [];   // red or yellow — always priority
+  const greenPractice = []; // green but not nailed — keep practicing
+  const untested = [];    // no color yet (< 3 times)
+  const fast = [];        // already fast but not retired
+
+  Object.entries(state.problems).forEach(([key, p]) => {
+    if (isRetired(key)) return;
+    const sc = getSpeedClass(p, key);
+    const hoursSince = p.lastSeen ? (now - p.lastSeen) / 3600000 : 999;
+    const tier = problemTier(key);
+    const entry = { key, tier, hoursSince, level: p.level };
+
+    if (sc === 'speed-slow') { entry.cat = 'red'; needsWork.push(entry); }
+    else if (sc === 'speed-medium') { entry.cat = 'yellow'; needsWork.push(entry); }
+    else if (sc === 'speed-fast') { greenPractice.push(entry); }
+    else if (sc === 'speed-none' && (p.times || []).length > 0) { untested.push(entry); } // has some times but < 3
+    else if (sc === 'speed-none') { untested.push(entry); }
+    else { fast.push(entry); }
+  });
+
+  // Sort within categories
+  // Needs work: prioritize red over yellow, then by recency
+  needsWork.sort((a, b) => {
+    if (a.cat !== b.cat) return a.cat === 'red' ? -1 : 1;
+    return b.hoursSince - a.hoursSince;
+  });
+
+  // Untested: prioritize easier tiers, with randomness within tiers
+  untested.sort((a, b) => {
+    if (a.tier !== b.tier) return a.tier - b.tier;
+    return Math.random() - 0.5;
+  });
+
+  // Green practice: by recency
+  greenPractice.sort((a, b) => b.hoursSince - a.hoursSince);
+
+  const selected = [];
+  const usedKeys = new Set();
+  function add(entry) {
+    if (selected.length >= 12 || usedKeys.has(entry.key)) return false;
+    selected.push(entry.key);
+    usedKeys.add(entry.key);
+    return true;
+  }
+
+  // 1. Red/yellow problems first (up to 5) — these need the most work
+  for (const e of needsWork) {
+    if (selected.length >= 5) break;
+    add(e);
+  }
+
+  // 2. Untested problems — mostly from easiest available tier (up to 5)
+  //    ~75% from the easiest tier that still has untested, ~25% from harder tiers
+  const easyUntested = untested.filter(e => e.tier === (untested[0]?.tier || 1));
+  const harderUntested = untested.filter(e => e.tier > (untested[0]?.tier || 1));
+  const untestedSlots = Math.min(5, 12 - selected.length);
+  const hardSlots = Math.min(Math.ceil(untestedSlots * 0.25), harderUntested.length);
+  const easySlots = untestedSlots - hardSlots;
+
+  for (let i = 0; i < easySlots && i < easyUntested.length; i++) add(easyUntested[i]);
+  for (let i = 0; i < hardSlots && i < harderUntested.length; i++) add(harderUntested[i]);
+
+  // 3. Green practice — keep sharpening (fill remaining)
+  for (const e of greenPractice) {
+    if (selected.length >= 12) break;
+    add(e);
+  }
+
+  // 4. Fill any remaining spots with more needs-work or untested
+  for (const e of [...needsWork, ...untested, ...fast]) {
+    if (selected.length >= 12) break;
+    add(e);
+  }
+
+  // Shuffle so it doesn't feel predictable
   for (let i = selected.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [selected[i], selected[j]] = [selected[j], selected[i]];
