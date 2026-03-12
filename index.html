@@ -1025,7 +1025,9 @@ function generateDistractors(a, b, answer) {
 }
 
 function startQuiz() {
-  quiz = { problems: selectProblems(), index: 0, results: [], streak: 0, sessionStars: 0, startTime: 0, answered: false };
+  // Carry streak across quizzes — only resets on wrong answer
+  const carryStreak = state.profile.currentStreak || 0;
+  quiz = { problems: selectProblems(), index: 0, results: [], streak: carryStreak, sessionStars: 0, startTime: 0, answered: false };
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById('view-quiz').classList.add('active');
   document.getElementById('quiz-accuracy').textContent = '';
@@ -1113,6 +1115,7 @@ function submitAnswer(val) {
   } else {
     quiz.streak = 0;
   }
+  state.profile.currentStreak = quiz.streak;
 
   // Track response time (only multiple choice — typed input takes longer to type, not fair)
   if (!isTyped) {
@@ -1620,7 +1623,9 @@ const ACHIEVEMENTS = [
   { id: 'master_10', name: 'Getting Started', desc: 'Master 10 facts', icon: '🌱', check: () => masteredCount() >= 10 },
   { id: 'master_25', name: 'Quarter Way', desc: 'Master 25 facts', icon: '🌿', check: () => masteredCount() >= 25 },
   { id: 'master_50', name: 'Halfway Hero', desc: 'Master 50 facts', icon: '🌳', check: () => masteredCount() >= 50 },
+  { id: 'master_75', name: 'Three Quarters', desc: 'Master 75 facts', icon: '🌲', check: () => masteredCount() >= 75 },
   { id: 'master_100', name: 'Century Club', desc: 'Master 100 facts', icon: '💯', check: () => masteredCount() >= 100 },
+  { id: 'master_125', name: 'Almost There', desc: 'Master 125 facts', icon: '🏔️', check: () => masteredCount() >= 125 },
   { id: 'master_144', name: 'Multiplication Master', desc: 'Master all 144 facts', icon: '👑', check: () => masteredCount() >= 144 },
   { id: 'table_1', name: '1s Champion', desc: 'Complete the 1s table', icon: '🥇', check: () => isColComplete(1) },
   { id: 'table_2', name: '2s Champion', desc: 'Complete the 2s table', icon: '🥇', check: () => isColComplete(2) },
@@ -1636,7 +1641,10 @@ const ACHIEVEMENTS = [
   { id: 'table_12', name: '12s Champion', desc: 'Complete the 12s table', icon: '🥇', check: () => isColComplete(12) },
   { id: 'streak_5', name: 'Hot Streak', desc: '5 correct in a row', icon: '🔥', check: () => state.profile.bestAnswerStreak >= 5 },
   { id: 'streak_10', name: 'On Fire', desc: '10 correct in a row', icon: '🔥', check: () => state.profile.bestAnswerStreak >= 10 },
-  { id: 'streak_20', name: 'Unstoppable', desc: '20 correct in a row', icon: '💥', check: () => state.profile.bestAnswerStreak >= 20 },
+  { id: 'streak_15', name: 'Unstoppable', desc: '15 correct in a row', icon: '💥', check: () => state.profile.bestAnswerStreak >= 15 },
+  { id: 'streak_20', name: 'Legendary', desc: '20 correct in a row', icon: '🏆', check: () => state.profile.bestAnswerStreak >= 20 },
+  { id: 'streak_25', name: 'Incredible', desc: '25 correct in a row', icon: '🌟', check: () => state.profile.bestAnswerStreak >= 25 },
+  { id: 'streak_30', name: 'Unreal', desc: '30 correct in a row', icon: '👑', check: () => state.profile.bestAnswerStreak >= 30 },
   { id: 'speed_demon', name: 'Speed Demon', desc: 'Answer in under 3 seconds', icon: '⚡', check: () => state.sessions.some(s => s.fastAnswer) },
   { id: 'perfect', name: 'Perfect Session', desc: 'Get 12/12 correct', icon: '💎', check: () => state.sessions.some(s => s.score === 12) },
   { id: 'daily_3', name: 'Dedicated', desc: '3-day practice streak', icon: '📅', check: () => state.profile.dailyStreak >= 3 },
