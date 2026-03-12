@@ -1494,38 +1494,11 @@ function showCellPopover(a, b) {
     <div class="popover-stats">
       ${p.totalAttempts > 0 ? `${p.correct}/${p.totalAttempts} correct · ${p.consecutive} in a row` : 'Not practiced yet'}
     </div>
-    <button class="btn btn-primary" style="min-width:180px" onclick="practiceSpecific(${a},${b});this.closest('.popover-overlay').remove()">Practice This</button>
   `;
   overlay.appendChild(pop);
   document.body.appendChild(overlay);
 }
 
-function practiceSpecific(a, b) {
-  const key = `${a}x${b}`;
-  const related = [];
-  for (let i = 1; i <= 12; i++) {
-    const k = `${a}x${i}`;
-    if (k !== key && state.problems[k].level < 3) related.push(k);
-  }
-  for (let i = 1; i <= 12; i++) {
-    const k = `${i}x${b}`;
-    if (k !== key && !related.includes(k) && state.problems[k].level < 3) related.push(k);
-  }
-  for (let i = related.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [related[i], related[j]] = [related[j], related[i]];
-  }
-  const problems = [key, ...related.slice(0, 11)];
-  while (problems.length < 12) {
-    const rk = `${Math.ceil(Math.random() * 12)}x${Math.ceil(Math.random() * 12)}`;
-    if (!problems.includes(rk)) problems.push(rk);
-  }
-  quiz = { problems, index: 0, results: [], streak: 0, sessionStars: 0, startTime: 0, answered: false };
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById('view-quiz').classList.add('active');
-  currentView = 'quiz';
-  showProblem();
-}
 
 /* ==================== MENTAL MATH TIPS ==================== */
 const TIPS = [
