@@ -445,7 +445,7 @@ input {
 .grid-cell:active { transform: scale(1.15); z-index: 2; }
 .grid-cell.speed-none { background: #fff; color: #BDBDBD; }
 .grid-cell.speed-fast { background: #4CAF50; }
-.grid-cell.speed-retired { background: #4A148C; color: #fff; }
+.grid-cell.speed-retired { background: #2E7D32; color: #fff; }
 .grid-cell.speed-medium { background: #FFF59D; color: #5D4037; }
 .grid-cell.speed-slow { background: #EF5350; }
 .grid-cell.dim { opacity: .2; }
@@ -644,7 +644,7 @@ input {
   animation: bannerSlide 3s ease forwards;
 }
 .banner-mastery { background: linear-gradient(135deg, var(--mastered), #2E7D32); }
-.banner-achievement { background: linear-gradient(135deg, var(--primary), #4A148C); }
+.banner-achievement { background: linear-gradient(135deg, var(--primary), #2E7D32); }
 
 /* ==================== RESPONSIVE ==================== */
 @media (min-width: 768px) {
@@ -1448,7 +1448,7 @@ function renderGrid() {
 
   // Summary
   document.getElementById('grid-summary').innerHTML = `
-    <div class="grid-summary-item"><div class="stat-value" style="color:#4A148C">${retiredCount}</div><div class="stat-label">Nailed (&lt;3s)</div></div>
+    <div class="grid-summary-item"><div class="stat-value" style="color:#2E7D32">${retiredCount}</div><div class="stat-label">Nailed (&lt;3s)</div></div>
     <div class="grid-summary-item"><div class="stat-value" style="color:#4CAF50">${fastCount}</div><div class="stat-label">Fast (3-4s)</div></div>
     <div class="grid-summary-item"><div class="stat-value" style="color:#FFC107">${medCount}</div><div class="stat-label">Medium (4-7s)</div></div>
     <div class="grid-summary-item"><div class="stat-value" style="color:#EF5350">${slowCount}</div><div class="stat-label">Slow (&gt;6s)</div></div>
@@ -1505,7 +1505,7 @@ function showCellPopover(a, b) {
     ${speedLabel ? `<div style="font-weight:700;font-size:15px;margin:4px 0">${speedLabel}${speedDetail}</div>` : ''}
     ${lastTimes.length > 0 ? `<div style="display:flex;gap:6px;justify-content:center;margin:8px 0">
       ${lastTimes.map(t => {
-        const c = t < 3 ? '#4A148C' : t < 4 ? '#4CAF50' : t <= 7 ? '#C0CA33' : '#EF5350';
+        const c = t < 3 ? '#2E7D32' : t < 4 ? '#4CAF50' : t <= 7 ? '#C0CA33' : '#EF5350';
         return `<div style="background:${c};color:#fff;border-radius:6px;padding:4px 8px;font-weight:800;font-size:13px">${t.toFixed(1)}s</div>`;
       }).join('')}
     </div>` : ''}
