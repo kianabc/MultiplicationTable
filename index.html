@@ -894,20 +894,42 @@ function renderDashboard() {
 function selectProblems() {
   const now = Date.now();
   // Difficulty tiers: easiest tables first, hardest last
-  // Tier 1 (easiest): 1s, 10s, 11s, 2s, 5s
-  // Tier 2 (medium):  9s, 4s, 3s, 12s
-  // Tier 3 (harder):  6s, 7s, 8s
-  const tierFor = n => [1, 10, 11, 2, 5].includes(n) ? 1 : [9, 4, 3, 12].includes(n) ? 2 : 3;
+  // Tier 1 (easiest): 1s, 10s, 11s
+  // Tier 2 (easy):    2s, 5s
+  // Tier 3 (medium):  9s, 4s, 3s
+  // Tier 4 (harder):  12s, 6s, 8s, 7s
+  const tierFor = n => [1, 10, 11].includes(n) ? 1 : [2, 5].includes(n) ? 2 : [9, 4, 3].includes(n) ? 3 : 4;
   function problemTier(key) {
     const [a, b] = key.split('x').map(Number);
     return Math.min(tierFor(a), tierFor(b)); // use the easier factor
   }
 
+  // Determine which tier we're currently working on
+  // A tier is "mastered" when 75%+ of its problems are green or purple
+  function tierMastery(tier) {
+    let total = 0, mastered = 0;
+    Object.entries(state.problems).forEach(([key, p]) => {
+      if (problemTier(key) !== tier) return;
+      total++;
+      const sc = getSpeedClass(p, key);
+      if (sc === 'speed-fast' || sc === 'speed-retired') mastered++;
+    });
+    return total > 0 ? mastered / total : 1;
+  }
+
+  // Find the current focus tier: first tier not yet 75% mastered
+  let focusTier = 1;
+  for (let t = 1; t <= 4; t++) {
+    if (tierMastery(t) < 0.75) { focusTier = t; break; }
+    if (t === 4) focusTier = 4; // all tiers mastered, keep practicing tier 4
+  }
+
   // Categorize all non-retired problems
-  const needsWork = [];   // red or yellow — always priority
-  const greenPractice = []; // green but not nailed — keep practicing
-  const untested = [];    // no color yet (< 3 times)
-  const fast = [];        // already fast but not retired
+  const needsWork = [];     // red or yellow — always priority
+  const focusUntested = []; // untested in current focus tier
+  const nextUntested = [];  // untested in next tier (preview/sprinkle)
+  const greenPractice = []; // green but not nailed
+  const other = [];         // everything else
 
   Object.entries(state.problems).forEach(([key, p]) => {
     if (isRetired(key)) return;
@@ -919,25 +941,25 @@ function selectProblems() {
     if (sc === 'speed-slow') { entry.cat = 'red'; needsWork.push(entry); }
     else if (sc === 'speed-medium') { entry.cat = 'yellow'; needsWork.push(entry); }
     else if (sc === 'speed-fast') { greenPractice.push(entry); }
-    else if (sc === 'speed-none' && (p.times || []).length > 0) { untested.push(entry); } // has some times but < 3
-    else if (sc === 'speed-none') { untested.push(entry); }
-    else { fast.push(entry); }
+    else if (sc === 'speed-none') {
+      if (tier <= focusTier) focusUntested.push(entry);
+      else if (tier === focusTier + 1) nextUntested.push(entry);
+      else other.push(entry);
+    }
+    else { other.push(entry); }
   });
 
   // Sort within categories
-  // Needs work: prioritize red over yellow, then by recency
   needsWork.sort((a, b) => {
     if (a.cat !== b.cat) return a.cat === 'red' ? -1 : 1;
+    // Within same color, prefer current focus tier
+    if (a.tier !== b.tier) return a.tier - b.tier;
     return b.hoursSince - a.hoursSince;
   });
 
-  // Untested: prioritize easier tiers, with randomness within tiers
-  untested.sort((a, b) => {
-    if (a.tier !== b.tier) return a.tier - b.tier;
-    return Math.random() - 0.5;
-  });
-
-  // Green practice: by recency
+  // Focus untested: randomize within tier
+  focusUntested.sort(() => Math.random() - 0.5);
+  nextUntested.sort(() => Math.random() - 0.5);
   greenPractice.sort((a, b) => b.hoursSince - a.hoursSince);
 
   const selected = [];
@@ -949,31 +971,33 @@ function selectProblems() {
     return true;
   }
 
-  // 1. Red/yellow problems first (up to 5) — these need the most work
+  // 1. Red/yellow problems (up to 4) — fix what's broken first
   for (const e of needsWork) {
-    if (selected.length >= 5) break;
+    if (selected.length >= 4) break;
     add(e);
   }
 
-  // 2. Untested problems — mostly from easiest available tier (up to 5)
-  //    ~75% from the easiest tier that still has untested, ~25% from harder tiers
-  const easyUntested = untested.filter(e => e.tier === (untested[0]?.tier || 1));
-  const harderUntested = untested.filter(e => e.tier > (untested[0]?.tier || 1));
-  const untestedSlots = Math.min(5, 12 - selected.length);
-  const hardSlots = Math.min(Math.ceil(untestedSlots * 0.25), harderUntested.length);
-  const easySlots = untestedSlots - hardSlots;
+  // 2. Focus tier untested (up to 5) — build mastery on current tier
+  for (const e of focusUntested) {
+    if (selected.length >= 9) break;
+    add(e);
+  }
 
-  for (let i = 0; i < easySlots && i < easyUntested.length; i++) add(easyUntested[i]);
-  for (let i = 0; i < hardSlots && i < harderUntested.length; i++) add(harderUntested[i]);
+  // 3. Sprinkle 1-2 from next tier — preview harder problems
+  let sprinkled = 0;
+  for (const e of nextUntested) {
+    if (sprinkled >= 2 || selected.length >= 11) break;
+    if (add(e)) sprinkled++;
+  }
 
-  // 3. Green practice — keep sharpening (fill remaining)
+  // 4. Green practice — keep sharpening
   for (const e of greenPractice) {
     if (selected.length >= 12) break;
     add(e);
   }
 
-  // 4. Fill any remaining spots with more needs-work or untested
-  for (const e of [...needsWork, ...untested, ...fast]) {
+  // 5. Fill remaining from any pool
+  for (const e of [...needsWork, ...focusUntested, ...nextUntested, ...other]) {
     if (selected.length >= 12) break;
     add(e);
   }
@@ -1330,9 +1354,9 @@ function getRawSpeedRank(key) {
   const times = getCombinedTimes(key);
   if (times.length < 3) return 0;
   const avg = times.reduce((a, b) => a + b, 0) / times.length;
-  if (avg < 2) return 4; // gold
-  if (avg < 3) return 3; // green
-  if (avg <= 6) return 2; // yellow
+  if (avg < 3) return 4; // nailed (purple)
+  if (avg < 4) return 3; // green
+  if (avg <= 7) return 2; // yellow
   return 1; // red
 }
 
@@ -1341,9 +1365,9 @@ function getSpeedClass(p, key) {
     const times = p.times || [];
     if (times.length < 3) return 'speed-none';
     const avg = times.reduce((a, b) => a + b, 0) / times.length;
-    if (avg < 2) return 'speed-retired';
-    if (avg < 3) return 'speed-fast';
-    if (avg <= 6) return 'speed-medium';
+    if (avg < 3) return 'speed-retired';
+    if (avg < 4) return 'speed-fast';
+    if (avg <= 7) return 'speed-medium';
     return 'speed-slow';
   }
   const rawRank = getRawSpeedRank(key);
@@ -1466,7 +1490,7 @@ function showCellPopover(a, b) {
   const mastered = sc === 'speed-fast' || sc === 'speed-retired';
   const masteryLabel = mastered ? 'Mastered' : (p.times || []).length >= 3 ? 'Learning' : 'New';
   const masteryColor = mastered ? 'var(--mastered)' : (p.times || []).length >= 3 ? 'var(--learning)' : 'var(--new)';
-  const speedLabel = avg === null ? '' : retired ? '✓ Nailed it!' : avg < 3 ? '🟢 Fast' : avg <= 6 ? '🟡 Medium' : '🔴 Slow';
+  const speedLabel = avg === null ? '' : retired ? '✓ Nailed it!' : avg < 4 ? '🟢 Fast' : avg <= 7 ? '🟡 Medium' : '🔴 Slow';
   const speedDetail = avg !== null ? ` · Avg ${avg.toFixed(1)}s` : '';
 
   // Times are already synced between commutative pairs, so just use this problem's times
@@ -1484,7 +1508,7 @@ function showCellPopover(a, b) {
     ${speedLabel ? `<div style="font-weight:700;font-size:15px;margin:4px 0">${speedLabel}${speedDetail}</div>` : ''}
     ${lastTimes.length > 0 ? `<div style="display:flex;gap:6px;justify-content:center;margin:8px 0">
       ${lastTimes.map(t => {
-        const c = t < 2 ? '#4A148C' : t < 3 ? '#4CAF50' : t <= 6 ? '#C0CA33' : '#EF5350';
+        const c = t < 3 ? '#4A148C' : t < 4 ? '#4CAF50' : t <= 7 ? '#C0CA33' : '#EF5350';
         return `<div style="background:${c};color:#fff;border-radius:6px;padding:4px 8px;font-weight:800;font-size:13px">${t.toFixed(1)}s</div>`;
       }).join('')}
     </div>` : ''}
