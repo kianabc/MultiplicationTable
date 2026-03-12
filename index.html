@@ -1115,18 +1115,18 @@ function submitAnswer(val) {
   }
 
   // Track response time (only multiple choice — typed input takes longer to type, not fair)
-  if (correct && !isTyped) {
-    const cappedTime = Math.min(elapsed, 20); // Cap at 20s — anything longer isn't a real attempt
-    prob.times.push(cappedTime);
+  if (!isTyped) {
+    const time = correct ? Math.min(elapsed, 20) : 10; // Wrong answer = 10s penalty
+    prob.times.push(time);
     if (prob.times.length > 5) prob.times = prob.times.slice(-5);
     // Sync time to commutative partner
     if (a !== b) {
       const pp = state.problems[`${b}x${a}`];
-      pp.times.push(cappedTime);
+      pp.times.push(time);
       if (pp.times.length > 5) pp.times = pp.times.slice(-5);
     }
     // Update best color (ratchet — only goes up)
-    updateBestColor(key);
+    if (correct) updateBestColor(key);
   }
 
   const prevLevel = prob.level;
