@@ -1451,9 +1451,9 @@ function renderGrid() {
 
   // Summary
   document.getElementById('grid-summary').innerHTML = `
-    <div class="grid-summary-item"><div class="stat-value" style="color:#4A148C">${retiredCount}</div><div class="stat-label">Nailed (&lt;2s)</div></div>
-    <div class="grid-summary-item"><div class="stat-value" style="color:#4CAF50">${fastCount}</div><div class="stat-label">Fast (2-3s)</div></div>
-    <div class="grid-summary-item"><div class="stat-value" style="color:#FFC107">${medCount}</div><div class="stat-label">Medium (3-6s)</div></div>
+    <div class="grid-summary-item"><div class="stat-value" style="color:#4A148C">${retiredCount}</div><div class="stat-label">Nailed (&lt;3s)</div></div>
+    <div class="grid-summary-item"><div class="stat-value" style="color:#4CAF50">${fastCount}</div><div class="stat-label">Fast (3-4s)</div></div>
+    <div class="grid-summary-item"><div class="stat-value" style="color:#FFC107">${medCount}</div><div class="stat-label">Medium (4-7s)</div></div>
     <div class="grid-summary-item"><div class="stat-value" style="color:#EF5350">${slowCount}</div><div class="stat-label">Slow (&gt;6s)</div></div>
   `;
 }
@@ -1655,7 +1655,7 @@ function checkAchievements() {
 
   // Track fast answers and perfect sessions
   const lastResult = quiz.results[quiz.results.length - 1];
-  if (lastResult && lastResult.elapsed < 2 && lastResult.correct) {
+  if (lastResult && lastResult.elapsed < 3 && lastResult.correct) {
     if (state.sessions.length > 0) state.sessions[state.sessions.length - 1].fastAnswer = true;
     else state._hasFastAnswer = true;
   }
