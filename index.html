@@ -1142,7 +1142,7 @@ function submitAnswer(val) {
   if (a !== b) {
     const partner = `${b}x${a}`;
     const pp = state.problems[partner];
-    if (correct && pp.level < newLevel) {
+    if (correct && pp.level < prob.level) {
       pp.correct++;
       pp.lastSeen = Date.now();
     }
