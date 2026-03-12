@@ -1427,7 +1427,7 @@ function renderGrid() {
       else if (sc === 'speed-medium') medCount++;
       else if (sc === 'speed-slow') slowCount++;
       else unpracticed++;
-      const dim = (gridFilter === 'slow' && (sc === 'speed-fast' || sc === 'speed-retired'))
+      const dim = (gridFilter === 'slow' && (sc === 'speed-fast' || sc === 'speed-retired' || sc === 'speed-medium'))
               || (gridFilter === 'fast' && sc !== 'speed-fast' && sc !== 'speed-retired');
       html += `<div class="grid-cell ${sc} ${dim ? 'dim' : ''}" onclick="showCellPopover(${a},${b})" title="${a}×${b}">${(sc === 'speed-retired' || sc === 'speed-fast') ? '✓' : a * b}</div>`;
     }
@@ -1438,7 +1438,7 @@ function renderGrid() {
   document.getElementById('grid-summary').innerHTML = `
     <div class="grid-summary-item"><div class="stat-value" style="color:#2E7D32">${retiredCount + fastCount}</div><div class="stat-label">Mastered</div></div>
     <div class="grid-summary-item"><div class="stat-value" style="color:#FFC107">${medCount}</div><div class="stat-label">Learning (4-7s)</div></div>
-    <div class="grid-summary-item"><div class="stat-value" style="color:#EF5350">${slowCount}</div><div class="stat-label">Needs Work (&gt;7s)</div></div>
+    <div class="grid-summary-item"><div class="stat-value" style="color:#EF5350">${slowCount + unpracticed}</div><div class="stat-label">Needs Work</div></div>
   `;
 }
 
