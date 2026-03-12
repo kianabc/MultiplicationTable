@@ -1403,11 +1403,11 @@ function getAvgSpeed(p, key) {
 }
 
 function isRetired(key) {
-  // Retired = gold level achieved (can't go back)
+  // Retired = green or purple (both count as completed)
   const p = state.problems[key];
   const [a, b] = key.split('x').map(Number);
   const best = Math.max(p.bestColor || 0, a !== b ? (state.problems[`${b}x${a}`]?.bestColor || 0) : 0);
-  return best >= 4;
+  return best >= 3;
 }
 
 function renderGrid() {
