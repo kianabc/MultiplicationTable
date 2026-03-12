@@ -838,6 +838,14 @@ let currentView = 'welcome';
 
 function showView(name) {
   if (name === 'quiz') return;
+  // Block navigation during an active quiz — must finish to earn stars
+  if (currentView === 'quiz' && quiz.index < quiz.problems.length) {
+    if (!confirm('If you leave now, you will lose all stars from this session. Leave anyway?')) return;
+    // Forfeit session stars
+    state.profile.totalStars -= quiz.sessionStars;
+    quiz.sessionStars = 0;
+    saveState();
+  }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   const el = document.getElementById(`view-${name}`);
   if (el) el.classList.add('active');
@@ -1062,6 +1070,16 @@ function showProblem() {
       if (e.key === 'Enter') submitTyped();
     });
   }
+  // Show tip below the answer area to help before answering
+  const sc = getSpeedClass(prob, key);
+  if (sc !== 'speed-fast' && sc !== 'speed-retired') {
+    const tip = getSpecificTip(a, b);
+    area.innerHTML += `<div class="tip-bubble" style="margin-top:12px;text-align:center">
+      <div class="tip-label">💡 Hint</div>
+      <div>${tip}</div>
+    </div>`;
+  }
+
   quiz.startTime = Date.now();
 }
 
