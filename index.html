@@ -1447,10 +1447,9 @@ function renderGrid() {
 
   // Summary
   document.getElementById('grid-summary').innerHTML = `
-    <div class="grid-summary-item"><div class="stat-value" style="color:#2E7D32">${retiredCount}</div><div class="stat-label">Nailed (&lt;3s)</div></div>
-    <div class="grid-summary-item"><div class="stat-value" style="color:#4CAF50">${fastCount}</div><div class="stat-label">Fast (3-4s)</div></div>
-    <div class="grid-summary-item"><div class="stat-value" style="color:#FFC107">${medCount}</div><div class="stat-label">Medium (4-7s)</div></div>
-    <div class="grid-summary-item"><div class="stat-value" style="color:#EF5350">${slowCount}</div><div class="stat-label">Slow (&gt;6s)</div></div>
+    <div class="grid-summary-item"><div class="stat-value" style="color:#2E7D32">${retiredCount + fastCount}</div><div class="stat-label">Mastered</div></div>
+    <div class="grid-summary-item"><div class="stat-value" style="color:#FFC107">${medCount}</div><div class="stat-label">Learning (4-7s)</div></div>
+    <div class="grid-summary-item"><div class="stat-value" style="color:#EF5350">${slowCount}</div><div class="stat-label">Needs Work (&gt;7s)</div></div>
   `;
 }
 
@@ -1494,7 +1493,7 @@ function showCellPopover(a, b) {
   const mastered = sc === 'speed-fast' || sc === 'speed-retired';
   const masteryLabel = mastered ? 'Mastered' : (p.times || []).length >= 3 ? 'Learning' : 'New';
   const masteryColor = mastered ? 'var(--mastered)' : (p.times || []).length >= 3 ? 'var(--learning)' : 'var(--new)';
-  const speedLabel = avg === null ? '' : retired ? '✓ Nailed it!' : avg < 4 ? '🟢 Fast' : avg <= 7 ? '🟡 Medium' : '🔴 Slow';
+  const speedLabel = avg === null ? '' : mastered ? '✓ Mastered' : avg <= 7 ? '🟡 Learning' : '🔴 Needs Work';
   const speedDetail = avg !== null ? ` · Avg ${avg.toFixed(1)}s` : '';
 
   // Times are already synced between commutative pairs, so just use this problem's times
@@ -2002,6 +2001,10 @@ function syncCommutativePairs() {
 function init() {
   loadState();
   syncCommutativePairs();
+
+  // Check for any achievements earned retroactively (e.g. after rule changes)
+  if (state.profile.name) checkAchievements();
+  saveState();
 
   if (state.profile.name) {
     document.getElementById('bottom-nav').style.display = 'flex';
