@@ -1073,7 +1073,7 @@ function showProblem() {
   // Show tip below the answer area to help before answering
   const sc = getSpeedClass(prob, key);
   if (sc !== 'speed-fast' && sc !== 'speed-retired') {
-    const tip = getSpecificTip(a, b);
+    const tip = getSpecificTip(a, b, false);
     area.innerHTML += `<div class="tip-bubble" style="margin-top:12px;text-align:center">
       <div class="tip-label">💡 Hint</div>
       <div>${tip}</div>
@@ -1188,7 +1188,7 @@ function submitAnswer(val) {
 
   // Show inline tip for any non-green/gold problem (both correct and wrong)
   if (showTip) {
-    const specificTip = getSpecificTip(a, b);
+    const specificTip = getSpecificTip(a, b, true);
     feedbackEl.innerHTML += `<div class="tip-bubble">
       <div class="tip-label">💡 Quick trick</div>
       <div>${specificTip}</div>
@@ -1540,24 +1540,43 @@ const TIPS = [
   { id: 'near_squares', title: 'Near Squares', short: 'n×(n+1) = n² + n!', desc: 'If you know the square, the next one is just adding n more. Like 7×8 = 7×7 + 7 = 49+7 = 56.', example: '7×8 = 49+7 = 56', factors: 'near_squares', icon: '📐' },
 ];
 
-function getSpecificTip(a, b) {
+function getSpecificTip(a, b, showAnswer) {
   const answer = a * b;
-  // Return a worked-out strategy specific to these numbers
-  if (a === 1 || b === 1) { const o = a === 1 ? b : a; return `Any number × 1 = itself. So it's just ${o}!`; }
-  if (a === 10 || b === 10) { const o = a === 10 ? b : a; return `Add a zero to ${o} → ${answer}`; }
-  if (a === 2 || b === 2) { const o = a === 2 ? b : a; return `Double ${o}: ${o} + ${o} = ${answer}`; }
-  if (a === 5 || b === 5) { const o = a === 5 ? b : a; return o % 2 === 0 ? `Half of ${o} is ${o/2}, then ×10 → ${answer}` : `${o} × 5: count by 5s → ${Array.from({length:o},(_,i)=>(i+1)*5).join(', ')}`; }
-  if (a === 11 || b === 11) { const o = a === 11 ? b : a; if (o <= 9) return `Just repeat the digit: ${o}${o}!`; return `${o} × 10 + ${o} = ${o*10} + ${o} = ${answer}`; }
-  if (a === 4 || b === 4) { const o = a === 4 ? b : a; return `Double-double: ${o} → ${o*2} → ${o*4}`; }
-  if (a === 9 || b === 9) { const o = a === 9 ? b : a; return `${o} × 10 − ${o} = ${o*10} − ${o} = ${answer}. Digits add to 9!`; }
-  if (a === 8 || b === 8) { const o = a === 8 ? b : a; return `Double three times: ${o} → ${o*2} → ${o*4} → ${o*8}`; }
-  if (a === 3 || b === 3) { const o = a === 3 ? b : a; return `Triple ${o}: ${o} + ${o} + ${o} = ${answer}`; }
-  if (a === 12 || b === 12) { const o = a === 12 ? b : a; return `${o}×10 + ${o}×2 = ${o*10} + ${o*2} = ${answer}`; }
-  if (a === b) return `${a} squared = ${answer}. Memorize this landmark!`;
-  if (Math.abs(a-b) === 1) { const s = Math.min(a,b); return `${s}×${s}=${s*s}, then add ${s} → ${answer}`; }
-  if (a === 6 || b === 6) { const o = a === 6 ? b : a; return `${o}×3 = ${o*3}, then double → ${answer}`; }
-  if (a === 7 || b === 7) { const o = a === 7 ? b : a; return `${o}×5 + ${o}×2 = ${o*5} + ${o*2} = ${answer}`; }
-  return `Break it up: ${a}×${Math.floor(b/2)} = ${a*Math.floor(b/2)}, ×2 = ${answer}`;
+  // If showAnswer is false, teach the strategy without giving the result
+  if (showAnswer) {
+    // Full worked example (shown AFTER answering)
+    if (a === 1 || b === 1) { const o = a === 1 ? b : a; return `Any number × 1 = itself → ${answer}`; }
+    if (a === 10 || b === 10) { const o = a === 10 ? b : a; return `Add a zero to ${o} → ${answer}`; }
+    if (a === 2 || b === 2) { const o = a === 2 ? b : a; return `Double ${o}: ${o} + ${o} = ${answer}`; }
+    if (a === 5 || b === 5) { const o = a === 5 ? b : a; return o % 2 === 0 ? `Half of ${o} is ${o/2}, then ×10 → ${answer}` : `Count by 5s: ${Array.from({length:o},(_,i)=>(i+1)*5).join(', ')}`; }
+    if (a === 11 || b === 11) { const o = a === 11 ? b : a; if (o <= 9) return `Repeat the digit: ${answer}!`; return `${o}×10 + ${o} = ${answer}`; }
+    if (a === 4 || b === 4) { const o = a === 4 ? b : a; return `Double-double: ${o} → ${o*2} → ${answer}`; }
+    if (a === 9 || b === 9) { const o = a === 9 ? b : a; return `${o}×10 − ${o} = ${answer}`; }
+    if (a === 8 || b === 8) { const o = a === 8 ? b : a; return `Double three times: ${o} → ${o*2} → ${o*4} → ${answer}`; }
+    if (a === 3 || b === 3) { const o = a === 3 ? b : a; return `Triple: ${o} + ${o} + ${o} = ${answer}`; }
+    if (a === 12 || b === 12) { const o = a === 12 ? b : a; return `${o}×10 + ${o}×2 = ${o*10} + ${o*2} = ${answer}`; }
+    if (a === b) return `${a} squared = ${answer}`;
+    if (Math.abs(a-b) === 1) { const s = Math.min(a,b); return `${s}×${s} = ${s*s}, plus ${s} more = ${answer}`; }
+    if (a === 6 || b === 6) { const o = a === 6 ? b : a; return `${o}×3 = ${o*3}, then double = ${answer}`; }
+    if (a === 7 || b === 7) { const o = a === 7 ? b : a; return `${o}×5 + ${o}×2 = ${answer}`; }
+    return `${a}×${Math.floor(b/2)} = ${a*Math.floor(b/2)}, then double = ${answer}`;
+  }
+  // Hint only — NO answer (shown BEFORE answering)
+  if (a === 1 || b === 1) return `Any number × 1 = itself!`;
+  if (a === 10 || b === 10) { const o = a === 10 ? b : a; return `Just add a zero to ${o}!`; }
+  if (a === 2 || b === 2) { const o = a === 2 ? b : a; return `Double ${o}: add ${o} + ${o}`; }
+  if (a === 5 || b === 5) { const o = a === 5 ? b : a; return o % 2 === 0 ? `Half of ${o}, then add a zero` : `Count by 5s, ${o} times`; }
+  if (a === 11 || b === 11) { const o = a === 11 ? b : a; if (o <= 9) return `× 11 for single digits: just repeat the digit!`; return `Think: ${o} × 10, then add ${o} more`; }
+  if (a === 4 || b === 4) { const o = a === 4 ? b : a; return `Double-double! Double ${o}, then double again`; }
+  if (a === 9 || b === 9) { const o = a === 9 ? b : a; return `Think: ${o} × 10, then subtract ${o}`; }
+  if (a === 8 || b === 8) { const o = a === 8 ? b : a; return `Double ${o} three times in a row!`; }
+  if (a === 3 || b === 3) { const o = a === 3 ? b : a; return `Add ${o} + ${o} + ${o}`; }
+  if (a === 12 || b === 12) { const o = a === 12 ? b : a; return `Think: ${o} × 10, then add ${o} × 2`; }
+  if (a === b) return `What's ${a} squared? Memorize this one!`;
+  if (Math.abs(a-b) === 1) { const s = Math.min(a,b); return `Start with ${s} × ${s}, then add ${s} more`; }
+  if (a === 6 || b === 6) { const o = a === 6 ? b : a; return `Find ${o} × 3 first, then double it`; }
+  if (a === 7 || b === 7) { const o = a === 7 ? b : a; return `Split it: ${o} × 5 plus ${o} × 2`; }
+  return `Try breaking it up: ${a} × ${Math.floor(b/2)}, then double`;
 }
 
 function getTipForProblem(a, b) {
