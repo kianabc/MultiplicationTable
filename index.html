@@ -1441,7 +1441,7 @@ function renderGrid() {
       else unpracticed++;
       const dim = (gridFilter === 'slow' && (sc === 'speed-fast' || sc === 'speed-retired'))
               || (gridFilter === 'fast' && sc !== 'speed-fast' && sc !== 'speed-retired');
-      html += `<div class="grid-cell ${sc} ${dim ? 'dim' : ''}" onclick="showCellPopover(${a},${b})" title="${a}×${b}">${sc === 'speed-retired' ? '✓' : a * b}</div>`;
+      html += `<div class="grid-cell ${sc} ${dim ? 'dim' : ''}" onclick="showCellPopover(${a},${b})" title="${a}×${b}">${(sc === 'speed-retired' || sc === 'speed-fast') ? '✓' : a * b}</div>`;
     }
   }
   container.innerHTML = html;
