@@ -830,7 +830,10 @@ function saveState() {
 }
 
 function masteredCount() {
-  return Object.values(state.problems).filter(p => p.level >= 3).length;
+  return Object.entries(state.problems).filter(([key, p]) => {
+    const sc = getSpeedClass(p, key);
+    return sc === 'speed-fast' || sc === 'speed-retired';
+  }).length;
 }
 
 /* ==================== VIEW MANAGER ==================== */
@@ -1234,11 +1237,7 @@ function updateMastery(key, correct) {
 
 function checkTableCompletion(a, b) {
   [a, b].forEach(n => {
-    let complete = true;
-    for (let i = 1; i <= 12; i++) {
-      if (state.problems[`${n}x${i}`].level < 3) { complete = false; break; }
-    }
-    if (complete) {
+    if (isColComplete(n)) {
       showBanner(`You completed the ${n}s table!`, 'mastery');
       showConfetti();
     }
@@ -1458,11 +1457,19 @@ function renderGrid() {
 function setGridFilter(f) { gridFilter = f; renderGrid(); }
 
 function isRowComplete(b) {
-  for (let a = 1; a <= 12; a++) if (state.problems[`${a}x${b}`].level < 3) return false;
+  for (let a = 1; a <= 12; a++) {
+    const key = `${a}x${b}`;
+    const sc = getSpeedClass(state.problems[key], key);
+    if (sc !== 'speed-fast' && sc !== 'speed-retired') return false;
+  }
   return true;
 }
 function isColComplete(a) {
-  for (let b = 1; b <= 12; b++) if (state.problems[`${a}x${b}`].level < 3) return false;
+  for (let b = 1; b <= 12; b++) {
+    const key = `${a}x${b}`;
+    const sc = getSpeedClass(state.problems[key], key);
+    if (sc !== 'speed-fast' && sc !== 'speed-retired') return false;
+  }
   return true;
 }
 function countCompleteTables() {
@@ -1472,7 +1479,7 @@ function countCompleteTables() {
 }
 function findHardestProblems() {
   return Object.entries(state.problems)
-    .filter(([, p]) => p.totalAttempts > 0 && p.level < 3)
+    .filter(([key, p]) => p.totalAttempts > 0 && !isRetired(key))
     .sort((a, b) => (a[1].correct / (a[1].totalAttempts || 1)) - (b[1].correct / (b[1].totalAttempts || 1)))
     .slice(0, 3)
     .map(([k]) => k);
@@ -1631,7 +1638,7 @@ const ACHIEVEMENTS = [
   { id: 'streak_5', name: 'Hot Streak', desc: '5 correct in a row', icon: '🔥', check: () => state.profile.bestAnswerStreak >= 5 },
   { id: 'streak_10', name: 'On Fire', desc: '10 correct in a row', icon: '🔥', check: () => state.profile.bestAnswerStreak >= 10 },
   { id: 'streak_20', name: 'Unstoppable', desc: '20 correct in a row', icon: '💥', check: () => state.profile.bestAnswerStreak >= 20 },
-  { id: 'speed_demon', name: 'Speed Demon', desc: 'Answer in under 2 seconds', icon: '⚡', check: () => state.sessions.some(s => s.fastAnswer) },
+  { id: 'speed_demon', name: 'Speed Demon', desc: 'Answer in under 3 seconds', icon: '⚡', check: () => state.sessions.some(s => s.fastAnswer) },
   { id: 'perfect', name: 'Perfect Session', desc: 'Get 12/12 correct', icon: '💎', check: () => state.sessions.some(s => s.score === 12) },
   { id: 'daily_3', name: 'Dedicated', desc: '3-day practice streak', icon: '📅', check: () => state.profile.dailyStreak >= 3 },
   { id: 'daily_7', name: 'Week Warrior', desc: '7-day practice streak', icon: '🗓️', check: () => state.profile.dailyStreak >= 7 },
